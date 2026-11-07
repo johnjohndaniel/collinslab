@@ -3,11 +3,15 @@
 //   POST   /api/cards            { column_id, title, description?, label?, position? }
 //   PATCH  /api/cards/:id        any of { title, description, label, column_id, position }
 //   DELETE /api/cards/:id
+//   POST   /api/columns          { name }  (appended on the right)
+//   PATCH  /api/columns/:id      { name }
+//   DELETE /api/columns/:id      only when empty
 //   GET    /api/export           full JSON dump (backup)
 
 const LABELS = new Set(['', 'idea', 'build', 'research', 'bug', 'urgent']);
 const MAX_TITLE = 200;
 const MAX_DESC = 10000;
+const MAX_COLUMN = 60;
 
 const bad = (msg, status = 400) => Response.json({ error: msg }, { status });
 
@@ -44,6 +48,13 @@ function clean(input, { partial }) {
     out.position = p;
   }
   return out;
+}
+
+function columnName(raw) {
+  const n = String(raw ?? '').trim();
+  if (!n) throw new Error('column name is required');
+  if (n.length > MAX_COLUMN) throw new Error(`column name longer than ${MAX_COLUMN} characters`);
+  return n;
 }
 
 async function board(db) {
@@ -107,6 +118,33 @@ export async function onRequest({ request, env, params }) {
       if (method === 'DELETE') {
         const r = await db.prepare('DELETE FROM cards WHERE id = ?').bind(id).run();
         return r.meta.changes ? new Response(null, { status: 204 }) : bad('card not found', 404);
+      }
+    }
+
+    if (path[0] === 'columns' && path.length === 1 && method === 'POST') {
+      const name = columnName((await body(request)).name);
+      const col = await db.prepare(
+        `INSERT INTO columns (name, position)
+         VALUES (?, (SELECT COALESCE(MAX(position), -1) + 1 FROM columns)) RETURNING *`,
+      ).bind(name).first();
+      return Response.json(col, { status: 201 });
+    }
+
+    if (path[0] === 'columns' && path.length === 2) {
+      const id = Number(path[1]);
+      if (!Number.isInteger(id)) return bad('bad column id');
+
+      if (method === 'PATCH') {
+        const name = columnName((await body(request)).name);
+        const col = await db.prepare('UPDATE columns SET name = ? WHERE id = ? RETURNING *').bind(name, id).first();
+        return col ? Response.json(col) : bad('column not found', 404);
+      }
+
+      if (method === 'DELETE') {
+        const { n } = await db.prepare('SELECT COUNT(*) AS n FROM cards WHERE column_id = ?').bind(id).first();
+        if (n) return bad(`Move or delete its ${n} card${n === 1 ? '' : 's'} first.`, 409);
+        const r = await db.prepare('DELETE FROM columns WHERE id = ?').bind(id).run();
+        return r.meta.changes ? new Response(null, { status: 204 }) : bad('column not found', 404);
       }
     }
 

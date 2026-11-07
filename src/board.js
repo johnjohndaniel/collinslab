@@ -60,11 +60,110 @@ function render() {
       } catch (err) { flash(err.message, true); input.value = title; }
     });
 
+    const del = el('button', { className: 'col-delete', type: 'button', textContent: '×', title: `Delete column "${col.name}"`, ariaLabel: `Delete column ${col.name}` });
+    del.addEventListener('click', () => deleteColumn(col));
+
     return el('section', { className: 'column' },
-      el('header', {}, el('h3', { textContent: col.name }), el('span', { className: 'count', textContent: cards.length })),
+      el('header', {}, columnTitle(col), el('span', { className: 'count', textContent: cards.length }), del),
       list, input);
-  }));
+  }), addColumnSlot());
 }
+
+// Click a column title to rename it; Enter saves, Escape cancels.
+function columnTitle(col) {
+  const h = el('h3', { textContent: col.name, title: 'Click to rename', tabIndex: 0 });
+  const edit = () => {
+    const input = el('input', { value: col.name, maxLength: 60, className: 'col-rename', ariaLabel: 'Column name' });
+    let done = false;
+    const finish = async (save) => {
+      if (done) return;
+      done = true;
+      const name = input.value.trim();
+      if (!save || !name || name === col.name) { render(); return; }
+      try {
+        Object.assign(col, await api('PATCH', `/api/columns/${col.id}`, { name }));
+        flash('Saved');
+      } catch (err) { flash(err.message, true); }
+      render();
+    };
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') finish(true); if (e.key === 'Escape') finish(false); });
+    input.addEventListener('blur', () => finish(true));
+    h.replaceWith(input);
+    input.focus(); input.select();
+  };
+  h.addEventListener('click', edit);
+  h.addEventListener('keydown', (e) => { if (e.key === 'Enter') edit(); });
+  return h;
+}
+
+async function deleteColumn(col) {
+  if (cardsIn(col.id).length) { flash(`Move or delete the cards in "${col.name}" first.`, true); return; }
+  if (!confirm(`Delete the empty column "${col.name}"?`)) return;
+  try {
+    await api('DELETE', `/api/columns/${col.id}`);
+    state.columns = state.columns.filter((c) => c.id !== col.id);
+    render(); flash('Deleted');
+  } catch (err) { flash(err.message, true); }
+}
+
+// The "+ Add column" slot that always sits to the right of the last column.
+function addColumnSlot() {
+  const input = el('input', { placeholder: '+ Add column', maxLength: 60, className: 'add-input add-column-input', ariaLabel: 'New column name' });
+  input.addEventListener('keydown', async (e) => {
+    if (e.key === 'Escape') { input.value = ''; input.blur(); return; }
+    if (e.key !== 'Enter' || !input.value.trim()) return;
+    const name = input.value.trim();
+    input.value = '';
+    try {
+      state.columns.push(await api('POST', '/api/columns', { name }));
+      render();
+      boardEl.querySelector('.add-column-input').focus();
+      boardEl.scrollTo({ left: boardEl.scrollWidth, behavior: 'smooth' });
+      flash('Saved');
+    } catch (err) { flash(err.message, true); input.value = name; }
+  });
+  return el('section', { className: 'column add-column' }, input);
+}
+
+// ---- Horizontal scrolling -------------------------------------------------
+// A vertical wheel over the board scrolls sideways, unless the pointer is over
+// a column that can itself still scroll vertically in that direction.
+boardEl.addEventListener('wheel', (e) => {
+  if (e.ctrlKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return; // pinch-zoom / trackpad sideways
+  const list = e.target.closest?.('.cards-list');
+  if (list) {
+    const canScroll = e.deltaY > 0 ? list.scrollTop + list.clientHeight < list.scrollHeight - 1 : list.scrollTop > 0;
+    if (canScroll) return;
+  }
+  if (boardEl.scrollWidth <= boardEl.clientWidth) return;
+  e.preventDefault();
+  boardEl.scrollLeft += e.deltaY;
+}, { passive: false });
+
+// Drag the empty background to pan.
+let pan = null;
+boardEl.addEventListener('pointerdown', (e) => {
+  if (e.button !== 0 || e.target.closest('.card-item, input, button, h3, .col-rename')) return;
+  pan = { x: e.clientX, left: boardEl.scrollLeft, id: e.pointerId };
+});
+window.addEventListener('pointermove', (e) => {
+  if (!pan || e.pointerId !== pan.id) return;
+  if (Math.abs(e.clientX - pan.x) > 3) boardEl.classList.add('panning');
+  boardEl.scrollLeft = pan.left - (e.clientX - pan.x);
+});
+window.addEventListener('pointerup', () => { pan = null; boardEl.classList.remove('panning'); });
+
+// While dragging a card near the left/right edge, scroll the board along.
+let edgeScroll = 0;
+boardEl.addEventListener('dragover', (e) => {
+  const r = boardEl.getBoundingClientRect(), zone = 80;
+  edgeScroll = e.clientX < r.left + zone ? -1 : e.clientX > r.right - zone ? 1 : 0;
+});
+document.addEventListener('dragend', () => { edgeScroll = 0; });
+(function tick() {
+  if (edgeScroll) boardEl.scrollLeft += edgeScroll * 14;
+  requestAnimationFrame(tick);
+})();
 
 function cardEl(card) {
   const li = el('li', { className: 'card-item', draggable: true, tabIndex: 0 },

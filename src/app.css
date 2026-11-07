@@ -24,13 +24,31 @@ body.app { overflow: auto; }
   border-bottom: 1px solid rgba(255,255,255,0.07); position: sticky; top: 0; background: var(--bg); z-index: 2; }
 .topbar h2 { margin: 0; font-size: 1.05rem; font-weight: 500; color: var(--muted); }
 
-.board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(16rem, 1fr); gap: 1rem;
-  padding: 1.25rem; overflow-x: auto; align-items: start; min-height: calc(100vh - 4rem); }
-.column { background: #121819; border: 1px solid rgba(255,255,255,0.06); border-radius: 0.7rem; padding: 0.75rem; }
-.column > header { display: flex; align-items: baseline; justify-content: space-between; padding: 0 0.25rem 0.5rem; }
-.column h3 { margin: 0; font-size: 0.95rem; }
+/* Board page: the top bar stays put, the board fills the rest of the screen and
+   scrolls sideways; each column scrolls its own cards vertically. */
+body.board-page { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+.board { flex: 1; min-height: 0; display: flex; align-items: flex-start; gap: 1rem; padding: 1.25rem;
+  overflow-x: auto; overflow-y: hidden; scrollbar-color: #3a4446 transparent; overscroll-behavior-x: contain; }
+.board.panning { cursor: grabbing; user-select: none; }
+.board::-webkit-scrollbar { height: 10px; }
+.board::-webkit-scrollbar-thumb { background: #3a4446; border-radius: 999px; }
+.column { flex: 0 0 18rem; max-height: 100%; display: flex; flex-direction: column;
+  background: #121819; border: 1px solid rgba(255,255,255,0.06); border-radius: 0.7rem; padding: 0.75rem; }
+.column > header { display: flex; align-items: center; gap: 0.5rem; padding: 0 0.25rem 0.5rem; }
+.column h3 { margin: 0; font-size: 0.95rem; flex: 1; cursor: text; overflow-wrap: anywhere; border-radius: 0.3rem; }
+.column h3:hover, .column h3:focus-visible { outline: 1px dashed rgba(255,255,255,0.2); outline-offset: 3px; }
+.col-rename { flex: 1; font: inherit; font-size: 0.95rem; font-weight: 600; color: var(--ink); background: #0d1314;
+  border: 1px solid var(--patina); border-radius: 0.35rem; padding: 0.1rem 0.35rem; min-width: 0; }
+.col-delete { background: none; border: none; color: var(--muted); font-size: 1.1rem; line-height: 1; cursor: pointer;
+  padding: 0 0.2rem; border-radius: 0.3rem; opacity: 0; transition: opacity .15s; }
+.column:hover .col-delete, .col-delete:focus-visible { opacity: 1; }
+.col-delete:hover { color: #ff8f7a; }
 .count { color: var(--muted); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
-.cards-list { list-style: none; margin: 0; padding: 0; min-height: 2.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.cards-list { list-style: none; margin: 0; padding: 0 0.15rem 0 0; min-height: 2.5rem; display: flex; flex-direction: column;
+  gap: 0.5rem; overflow-y: auto; flex: 1 1 auto; scrollbar-width: thin; scrollbar-color: #3a4446 transparent; }
+.column.add-column { background: transparent; border: 1px dashed rgba(255,255,255,0.12); padding: 0.5rem; }
+.column.add-column .add-input { margin-top: 0; border: none; }
+.column.add-column:focus-within { border-style: solid; border-color: var(--patina); }
 .card-item { background: #1b2426; border: 1px solid rgba(255,255,255,0.07); border-radius: 0.5rem; padding: 0.6rem 0.7rem;
   cursor: grab; transition: border-color .15s; }
 .card-item:hover, .card-item:focus-visible { border-color: var(--copper); outline: none; }
