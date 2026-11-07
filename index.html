@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Collins Lab: experiments in three dimensions</title>
+  <meta name="description" content="A sandbox for ideas and concepts, built in the browser with three.js." />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <canvas class="stage" id="stage" aria-label="Interactive 3D copper specimen"></canvas>
+  <main class="overlay">
+    <header>
+      <h1>collins<span>lab</span></h1>
+      <p class="tagline">A sandbox for trying out ideas and concepts, one interactive 3D experiment at a time.</p>
+    </header>
+    <section>
+      <p class="hint">Drag to orbit. Hover to tug the surface. Click to send a ripple.</p>
+      <div class="cards">
+        <a class="card" href="/experiments/specimen/">
+          <div class="num">EXP 01</div>
+          <h3>Copper specimen</h3>
+          <p>A living lump of copper that ripples, bulges and weathers into patina. Tune it with sliders.</p>
+        </a>
+      </div>
+    </section>
+  </main>
+  <script type="module">
+    import { createSpecimen } from '/src/specimen.js';
+    createSpecimen(document.getElementById('stage'), { zoom: false });
+  </script>
+</body>
+</html>

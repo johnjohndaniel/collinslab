@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EXP 01 · Copper specimen · Collins Lab</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <canvas class="stage" id="stage" aria-label="Interactive 3D copper specimen with controls"></canvas>
+  <a class="back" href="/">← collinslab</a>
+  <div class="info"><strong>EXP 01 · Copper specimen.</strong> Simplex-noise displacement on an icosphere, computed in the vertex shader.
+    Patina coverage is a noise threshold that also drops metalness and raises roughness. Drag, scroll, hover, click.</div>
+  <script type="module">
+    import GUI from 'lil-gui';
+    import { createSpecimen } from '/src/specimen.js';
+    const s = createSpecimen(document.getElementById('stage'), { autoRotate: false });
+    const gui = new GUI({ title: 'Specimen' });
+    gui.add(s.params, 'amplitude', 0, 0.6, 0.01).name('Lumpiness');
+    gui.add(s.params, 'frequency', 0.3, 4, 0.01).name('Detail');
+    gui.add(s.params, 'speed', 0, 4, 0.01).name('Speed');
+    gui.add(s.params, 'patina', 0, 1, 0.01).name('Patina');
+    gui.add(s.params, 'roughness', 0.02, 1, 0.01).name('Roughness').onChange(s.apply);
+    gui.addColor(s.params, 'copper').name('Metal').onChange(s.apply);
+    gui.addColor(s.params, 'patinaColor').name('Patina colour').onChange(s.apply);
+    gui.add(s.params, 'spores').name('Spores');
+    gui.add(s.controls, 'autoRotate').name('Auto-rotate');
+  </script>
+</body>
+</html>
