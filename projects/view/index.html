@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Project · Collins Lab</title>
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/src/style.css" />
+  <link rel="stylesheet" href="/src/app.css" />
+  <link rel="stylesheet" href="/src/projects/projects.css" />
+</head>
+<body class="app project-page">
+  <header class="topbar">
+    <a class="wordmark" href="/">collins<span>lab</span></a>
+    <a class="crumb" href="/projects/">← All projects</a>
+    <div class="spacer"></div>
+    <span id="synced" class="muted small"></span>
+    <a class="btn ghost" href="/board/">Board</a>
+  </header>
+  <main class="project-layout">
+    <section class="project-stage"><canvas id="stage" aria-label="3D model for this project"></canvas><p class="hint-small muted small">Drag to turn · scroll to zoom</p></section>
+    <article class="project-info" id="info"><p class="muted">Loading…</p></article>
+  </main>
+  <script type="module" src="/src/projects/view.js"></script>
+</body>
+</html>

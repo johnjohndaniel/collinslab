@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Projects · Collins Lab</title>
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/src/style.css" />
+  <link rel="stylesheet" href="/src/app.css" />
+  <link rel="stylesheet" href="/src/projects/projects.css" />
+</head>
+<body class="app projects-page">
+  <canvas id="stage" class="stage-shared" aria-hidden="true"></canvas>
+  <header class="topbar">
+    <a class="wordmark" href="/">collins<span>lab</span></a>
+    <h2>Projects</h2>
+    <div class="spacer"></div>
+    <span id="synced" class="muted small"></span>
+    <a class="btn ghost" href="/board/">Board</a>
+    <form method="post" action="/auth/logout"><button class="btn ghost">Sign out</button></form>
+  </header>
+  <main class="projects-main">
+    <p id="summary" class="summary muted"></p>
+    <div id="sections"></div>
+  </main>
+  <script type="module" src="/src/projects/index.js"></script>
+</body>
+</html>

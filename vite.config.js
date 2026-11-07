@@ -10,6 +10,8 @@ export default defineConfig({
         specimen: resolve(import.meta.dirname, 'experiments/specimen/index.html'),
         login: resolve(import.meta.dirname, 'login/index.html'),
         board: resolve(import.meta.dirname, 'board/index.html'),
+        projects: resolve(import.meta.dirname, 'projects/index.html'),
+        project: resolve(import.meta.dirname, 'projects/view/index.html'),
       },
     },
   },

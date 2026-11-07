@@ -6,6 +6,8 @@
 //   POST   /api/columns          { name }  (appended on the right)
 //   PATCH  /api/columns/:id      { name }
 //   DELETE /api/columns/:id      only when empty
+//   GET    /api/projects         live project overviews
+//   GET    /api/projects/:slug
 //   GET    /api/export           full JSON dump (backup)
 
 const LABELS = new Set(['', 'idea', 'build', 'research', 'bug', 'urgent']);
@@ -119,6 +121,16 @@ export async function onRequest({ request, env, params }) {
         const r = await db.prepare('DELETE FROM cards WHERE id = ?').bind(id).run();
         return r.meta.changes ? new Response(null, { status: 204 }) : bad('card not found', 404);
       }
+    }
+
+    // Live project overviews (written by tools/sync_projects.py).
+    if (path[0] === 'projects' && method === 'GET' && path.length <= 2) {
+      if (path.length === 1) {
+        const { results } = await db.prepare('SELECT data FROM projects ORDER BY sort').all();
+        return Response.json(results.map((r) => JSON.parse(r.data)), { headers: { 'Cache-Control': 'no-store' } });
+      }
+      const row = await db.prepare('SELECT data FROM projects WHERE slug = ?').bind(path[1]).first();
+      return row ? Response.json(JSON.parse(row.data), { headers: { 'Cache-Control': 'no-store' } }) : bad('project not found', 404);
     }
 
     if (path[0] === 'columns' && path.length === 1 && method === 'POST') {
