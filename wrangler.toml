@@ -5,10 +5,10 @@ pages_build_output_dir = "./dist"
 compatibility_date = "2026-11-01"
 
 [vars]
-GOOGLE_CLIENT_ID = ""
+GOOGLE_CLIENT_ID = "772715870369-biis7tljej1qnk2mi7teltg756m6oo2a.apps.googleusercontent.com"
 
 [[d1_databases]]
 binding = "DB"
 database_name = "collinslab"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "5b4c1ec3-8488-497c-b2d3-f0b1e8715131"
 migrations_dir = "migrations"
