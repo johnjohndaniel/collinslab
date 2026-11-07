@@ -7,21 +7,28 @@
   <meta name="description" content="A sandbox for ideas and concepts, built in the browser with three.js." />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="/src/style.css" />
+  <link rel="stylesheet" href="/src/app.css" />
 </head>
 <body>
   <canvas class="stage" id="stage" aria-label="Interactive 3D copper specimen"></canvas>
+  <nav class="account" id="account"><a class="btn ghost" href="/login/">Sign in</a></nav>
   <main class="overlay">
     <header>
       <h1>collins<span>lab</span></h1>
       <p class="tagline">A sandbox for trying out ideas and concepts, one interactive 3D experiment at a time.</p>
     </header>
     <section>
-      <p class="hint">Drag to orbit. Hover to tug the surface. Click to send a ripple.</p>
+      <p class="hint">Experiments and the board are private. Drag to orbit. Hover to tug the surface. Click to send a ripple.</p>
       <div class="cards">
         <a class="card" href="/experiments/specimen/">
           <div class="num">EXP 01</div>
           <h3>Copper specimen</h3>
           <p>A living lump of copper that ripples, bulges and weathers into patina. Tune it with sliders.</p>
+        </a>
+        <a class="card" href="/board/">
+          <div class="num">TOOLS</div>
+          <h3>Task board</h3>
+          <p>Kanban board for planning what to build next. <span class="lock">Private.</span></p>
         </a>
       </div>
     </section>
@@ -29,6 +36,15 @@
   <script type="module">
     import { createSpecimen } from '/src/specimen.js';
     createSpecimen(document.getElementById('stage'), { zoom: false });
+    fetch('/auth/me').then((r) => (r.ok ? r.json() : {})).then(({ email }) => {
+      if (!email) return;
+      const nav = document.getElementById('account');
+      const who = Object.assign(document.createElement('span'), { className: 'lock', textContent: email });
+      const out = Object.assign(document.createElement('form'), { method: 'post', action: '/auth/logout' });
+      out.style.margin = '0';
+      out.append(Object.assign(document.createElement('button'), { className: 'btn ghost', textContent: 'Sign out' }));
+      nav.replaceChildren(who, out);
+    }).catch(() => {});
   </script>
 </body>
 </html>

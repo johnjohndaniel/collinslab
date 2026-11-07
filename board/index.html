@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Board · Collins Lab</title>
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/src/style.css" />
+  <link rel="stylesheet" href="/src/app.css" />
+</head>
+<body class="app">
+  <header class="topbar">
+    <a class="wordmark" href="/">collins<span>lab</span></a>
+    <h2>Board</h2>
+    <div class="spacer"></div>
+    <span id="status" class="muted" aria-live="polite"></span>
+    <a class="btn ghost" href="/api/export">Export JSON</a>
+    <form method="post" action="/auth/logout"><button class="btn ghost">Sign out</button></form>
+  </header>
+  <main id="board" class="board" aria-label="Kanban board"></main>
+
+  <dialog id="editor">
+    <form method="dialog" id="editor-form">
+      <h3 id="editor-title">Edit card</h3>
+      <label>Title <input name="title" required maxlength="200" autocomplete="off" /></label>
+      <label>Notes <textarea name="description" rows="6" maxlength="10000"></textarea></label>
+      <div class="row">
+        <label>Column <select name="column_id"></select></label>
+        <label>Label
+          <select name="label">
+            <option value="">none</option><option>idea</option><option>build</option>
+            <option>research</option><option>bug</option><option>urgent</option>
+          </select>
+        </label>
+      </div>
+      <p class="muted small" id="editor-meta"></p>
+      <div class="row actions">
+        <button type="button" class="btn danger" id="delete">Delete</button>
+        <div class="spacer"></div>
+        <button value="cancel" class="btn ghost" formnovalidate>Cancel</button>
+        <button value="save" class="btn primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+  <script type="module" src="/src/board.js"></script>
+</body>
+</html>

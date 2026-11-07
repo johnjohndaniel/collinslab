@@ -1,0 +1,68 @@
+/* Styles for the private app pages (login, board). */
+body.app { overflow: auto; }
+.muted { color: var(--muted); }
+.small { font-size: 0.8rem; }
+.error { color: #ff8f7a; }
+.spacer { flex: 1; }
+.wordmark { font-weight: 600; font-size: 1.3rem; letter-spacing: -0.02em; color: var(--ink); text-decoration: none; }
+.wordmark span { color: var(--copper); }
+
+.btn { font: inherit; font-size: 0.9rem; cursor: pointer; border-radius: 0.45rem; padding: 0.4rem 0.8rem;
+  border: 1px solid rgba(255,255,255,0.14); background: #1a2224; color: var(--ink); text-decoration: none; display: inline-block; }
+.btn:hover { border-color: var(--copper); }
+.btn.ghost { background: transparent; }
+.btn.primary { background: var(--copper); border-color: var(--copper); color: #1b0f08; font-weight: 600; }
+.btn.danger { background: transparent; border-color: #7a3a30; color: #ff8f7a; }
+.topbar form { margin: 0; }
+
+.login { max-width: 22rem; margin: 18vh auto 0; padding: 2rem; text-align: center;
+  background: #121819; border: 1px solid rgba(255,255,255,0.08); border-radius: 0.8rem; }
+.login h2 { margin: 1rem 0 0.25rem; }
+.login #gsi { display: flex; justify-content: center; margin: 1.25rem 0 0.5rem; min-height: 44px; }
+
+.topbar { display: flex; align-items: center; gap: 0.9rem; padding: 0.9rem 1.25rem;
+  border-bottom: 1px solid rgba(255,255,255,0.07); position: sticky; top: 0; background: var(--bg); z-index: 2; }
+.topbar h2 { margin: 0; font-size: 1.05rem; font-weight: 500; color: var(--muted); }
+
+.board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(16rem, 1fr); gap: 1rem;
+  padding: 1.25rem; overflow-x: auto; align-items: start; min-height: calc(100vh - 4rem); }
+.column { background: #121819; border: 1px solid rgba(255,255,255,0.06); border-radius: 0.7rem; padding: 0.75rem; }
+.column > header { display: flex; align-items: baseline; justify-content: space-between; padding: 0 0.25rem 0.5rem; }
+.column h3 { margin: 0; font-size: 0.95rem; }
+.count { color: var(--muted); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.cards-list { list-style: none; margin: 0; padding: 0; min-height: 2.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.card-item { background: #1b2426; border: 1px solid rgba(255,255,255,0.07); border-radius: 0.5rem; padding: 0.6rem 0.7rem;
+  cursor: grab; transition: border-color .15s; }
+.card-item:hover, .card-item:focus-visible { border-color: var(--copper); outline: none; }
+.card-item.dragging { opacity: 0.35; }
+.card-title { font-size: 0.93rem; overflow-wrap: anywhere; }
+.card-desc { color: var(--muted); font-size: 0.8rem; margin-top: 0.25rem; white-space: pre-wrap; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.drop-marker { height: 3px; border-radius: 2px; background: var(--patina); }
+.add-input { width: 100%; margin-top: 0.6rem; font: inherit; font-size: 0.88rem; color: var(--ink); background: transparent;
+  border: 1px dashed rgba(255,255,255,0.15); border-radius: 0.5rem; padding: 0.5rem 0.6rem; }
+.add-input:focus { outline: none; border-color: var(--patina); border-style: solid; }
+
+.label { display: inline-block; font-size: 0.7rem; padding: 0.05rem 0.45rem; border-radius: 999px; margin-bottom: 0.3rem;
+  text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+.label-idea { background: #2f4f6b; color: #cfe6ff; }
+.label-build { background: #6b4227; color: #ffdcc4; }
+.label-research { background: #24584f; color: #c9fff3; }
+.label-bug { background: #6b2a2a; color: #ffd0d0; }
+.label-urgent { background: #8a6a12; color: #fff1c4; }
+
+dialog { background: #121819; color: var(--ink); border: 1px solid rgba(255,255,255,0.1); border-radius: 0.8rem;
+  width: min(32rem, 92vw); padding: 1.25rem; }
+dialog::backdrop { background: rgba(0,0,0,0.6); }
+dialog h3 { margin: 0 0 0.75rem; }
+dialog label { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.75rem; flex: 1; }
+dialog input, dialog textarea, dialog select { font: inherit; font-size: 0.95rem; color: var(--ink); background: #0d1314;
+  border: 1px solid rgba(255,255,255,0.14); border-radius: 0.45rem; padding: 0.45rem 0.55rem; }
+dialog textarea { resize: vertical; }
+dialog input:focus, dialog textarea:focus, dialog select:focus { outline: none; border-color: var(--patina); }
+.row { display: flex; gap: 0.75rem; align-items: center; }
+.row.actions { margin-top: 0.5rem; }
+
+.account { position: fixed; top: clamp(1.25rem, 4vw, 3rem); right: clamp(1.25rem, 4vw, 3rem); z-index: 2;
+  display: flex; gap: 0.6rem; align-items: center; }
+.lock { font-size: 0.75rem; color: var(--muted); }

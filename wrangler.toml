@@ -1,0 +1,14 @@
+# Cloudflare Pages config (classic Pages project "collinslab").
+# Secrets (SESSION_SECRET, ALLOWED_EMAIL) are set with `wrangler pages secret put`, never here.
+name = "collinslab"
+pages_build_output_dir = "./dist"
+compatibility_date = "2026-11-01"
+
+[vars]
+GOOGLE_CLIENT_ID = ""
+
+[[d1_databases]]
+binding = "DB"
+database_name = "collinslab"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"

@@ -8,6 +8,8 @@ export default defineConfig({
       input: {
         main: resolve(import.meta.dirname, 'index.html'),
         specimen: resolve(import.meta.dirname, 'experiments/specimen/index.html'),
+        login: resolve(import.meta.dirname, 'login/index.html'),
+        board: resolve(import.meta.dirname, 'board/index.html'),
       },
     },
   },
