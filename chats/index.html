@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chats · Collins Lab</title>
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/src/style.css" />
+  <link rel="stylesheet" href="/src/app.css" />
+  <link rel="stylesheet" href="/src/projects/projects.css" />
+  <link rel="stylesheet" href="/src/chats.css" />
+</head>
+<body class="app chats-page">
+  <header class="topbar">
+    <a class="wordmark" href="/">collins<span>lab</span></a>
+    <h2>Chats</h2>
+    <div class="spacer"></div>
+    <span id="synced" class="muted small"></span>
+    <a class="btn ghost" href="/projects/">Projects</a>
+    <a class="btn ghost" href="/board/">Board</a>
+    <form method="post" action="/auth/logout"><button class="btn ghost">Sign out</button></form>
+  </header>
+  <section class="constellation">
+    <canvas id="sky" aria-label="Every chat as a star, clustered by category. Click one to jump to it."></canvas>
+    <div id="tip" class="tip" hidden></div>
+    <p id="summary" class="sky-summary"></p>
+  </section>
+  <main class="chats-main">
+    <div class="chat-tools">
+      <input id="q" type="search" placeholder="Search titles and first messages…" aria-label="Search chats" />
+      <div id="chips" class="chips" role="group" aria-label="Filter by category"></div>
+    </div>
+    <div id="groups"></div>
+  </main>
+  <script type="module" src="/src/chats.js"></script>
+</body>
+</html>

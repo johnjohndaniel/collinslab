@@ -12,6 +12,7 @@ export default defineConfig({
         board: resolve(import.meta.dirname, 'board/index.html'),
         projects: resolve(import.meta.dirname, 'projects/index.html'),
         project: resolve(import.meta.dirname, 'projects/view/index.html'),
+        chats: resolve(import.meta.dirname, 'chats/index.html'),
       },
     },
   },

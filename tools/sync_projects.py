@@ -7,6 +7,8 @@ this public repo), gathers live state from Claude Code background jobs
 (~/handoff/PROJECTS.md) and session transcript folders (~/.claude/projects/*),
 and upserts one JSON row per project into the `projects` table.
 
+Also indexes every Claude chat (see tools/chats.py) into the `chats` table.
+
 Usage:
   sync_projects.py             # sync to Cloudflare D1
   sync_projects.py --dry-run   # print the rows instead
@@ -23,8 +25,13 @@ import os
 import re
 import sys
 import time
+import urllib.error
 import urllib.request
+from collections import Counter
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import chats as chatlib  # noqa: E402
 
 HOME = Path.home()
 JOBS = HOME / '.claude' / 'jobs'
@@ -154,6 +161,28 @@ def build(cfg, registry):
     }
 
 
+def humanize(title):
+    """Job-style slugs ("tmux-mouse-mode-copy") read better as words ("Tmux mouse mode copy")."""
+    t = (title or '').strip()
+    if t and ' ' not in t and '-' in t:
+        t = t.replace('--', ' / ').replace('-', ' ').replace('…', '…')
+        t = t[0].upper() + t[1:]
+    return t or 'Untitled chat'
+
+
+def chat_row(c):
+    """The public-facing shape of one chat (paths shortened, nothing large)."""
+    home = str(HOME)
+    cwd = (c.get('cwd') or '').replace(home, '~', 1) or None
+    return {
+        'id': c['id'], 'title': humanize(c['title']), 'first_prompt': c.get('first_prompt'), 'prompts': c['prompts'],
+        'start': c['start'], 'end': c['end'], 'host': c['host'], 'cwd': cwd, 'branch': c.get('branch'),
+        'job_name': c.get('job_name'), 'project': c.get('project'), 'project_title': c.get('project_title'),
+        'category': c['category'], 'category_label': chatlib.CATEGORY_LABELS[c['category']],
+        'category_rank': chatlib.CATEGORY_ORDER.index(c['category']),
+    }
+
+
 def load_env(path):
     env = {}
     for line in Path(path).read_text().splitlines():
@@ -174,8 +203,11 @@ def d1(env, db, sql, params):
     url = f"https://api.cloudflare.com/client/v4/accounts/{env['CLOUDFLARE_ACCOUNT_ID']}/d1/database/{db}/query"
     req = urllib.request.Request(url, data=json.dumps({'sql': sql, 'params': params}).encode(), method='POST',
                                  headers={'Authorization': f"Bearer {env['CLOUDFLARE_API_TOKEN']}", 'Content-Type': 'application/json'})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        out = json.load(r)
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            out = json.load(r)
+    except urllib.error.HTTPError as e:
+        raise RuntimeError(f'D1 {e.code}: {e.read().decode(errors="replace")[:500]}') from None
     if not out.get('success'):
         raise RuntimeError(out.get('errors'))
     return out
@@ -193,11 +225,20 @@ def main():
     projects = json.loads(Path(a.config).read_text())['projects']
     rows = [build(p, registry) for p in projects]
 
+    def project_for(sid, folder):
+        for p in projects:
+            if any(sid.startswith(j) for j in p.get('jobs', [])) or any(t in folder for t in p.get('transcripts', [])):
+                return p['slug'], p['title'], p.get('category')
+        return None, None, None
+
+    chat_rows = [chat_row(c) for c in chatlib.collect(project_for)]
+
     if a.out:
-        Path(a.out).write_text(json.dumps(rows, indent=1))
+        Path(a.out).write_text(json.dumps({'projects': rows, 'chats': chat_rows}, indent=1))
     if a.dry_run:
         for r in rows:
             print(f"{r['slug']:24} {r['status']:8} last={r['last_active']} now={(r['now'] or {}).get('text', '')[:70]!r}")
+        print(f"{len(chat_rows)} chats:", ', '.join(f"{k} {v}" for k, v in sorted(Counter(c['category'] for c in chat_rows).items())))
         return
 
     env, db = load_env(a.env), database_id()
@@ -207,7 +248,17 @@ def main():
            [r['slug'], i, json.dumps(r), r['synced_at']])
     slugs = [r['slug'] for r in rows]
     d1(env, db, f"DELETE FROM projects WHERE slug NOT IN ({', '.join('?' * len(slugs))})", slugs)
-    print(f"{iso(NOW)} synced {len(rows)} projects")
+    stamp = iso(NOW)
+    for i in range(0, len(chat_rows), 20):  # 5 values per chat; D1 allows at most 100 bound parameters per query
+        batch = chat_rows[i:i + 20]
+        d1(env, db, 'INSERT INTO chats (id, start, category, data, synced_at) VALUES '
+                    + ', '.join(['(?, ?, ?, ?, ?)'] * len(batch))
+                    + ' ON CONFLICT(id) DO UPDATE SET start = excluded.start, category = excluded.category, '
+                      'data = excluded.data, synced_at = excluded.synced_at',
+           [v for c in batch for v in (c['id'], c['start'], c['category'], json.dumps(c), stamp)])
+    if chat_rows:
+        d1(env, db, 'DELETE FROM chats WHERE synced_at != ?', [stamp])
+    print(f"{stamp} synced {len(rows)} projects, {len(chat_rows)} chats")
 
 
 if __name__ == '__main__':

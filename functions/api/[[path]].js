@@ -8,6 +8,7 @@
 //   DELETE /api/columns/:id      only when empty
 //   GET    /api/projects         live project overviews
 //   GET    /api/projects/:slug
+//   GET    /api/chats            every Claude chat, categorized
 //   GET    /api/export           full JSON dump (backup)
 
 const LABELS = new Set(['', 'idea', 'build', 'research', 'bug', 'urgent']);
@@ -131,6 +132,15 @@ export async function onRequest({ request, env, params }) {
       }
       const row = await db.prepare('SELECT data FROM projects WHERE slug = ?').bind(path[1]).first();
       return row ? Response.json(JSON.parse(row.data), { headers: { 'Cache-Control': 'no-store' } }) : bad('project not found', 404);
+    }
+
+    // Every Claude chat, categorized (written by tools/sync_projects.py).
+    if (path[0] === 'chats' && path.length === 1 && method === 'GET') {
+      const { results } = await db.prepare('SELECT data, synced_at FROM chats ORDER BY start DESC').all();
+      return Response.json({
+        synced_at: results[0]?.synced_at ?? null,
+        chats: results.map((r) => JSON.parse(r.data)),
+      }, { headers: { 'Cache-Control': 'no-store' } });
     }
 
     if (path[0] === 'columns' && path.length === 1 && method === 'POST') {
