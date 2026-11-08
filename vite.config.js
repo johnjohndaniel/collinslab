@@ -13,6 +13,7 @@ export default defineConfig({
         projects: resolve(import.meta.dirname, 'projects/index.html'),
         project: resolve(import.meta.dirname, 'projects/view/index.html'),
         chats: resolve(import.meta.dirname, 'chats/index.html'),
+        bookstore: resolve(import.meta.dirname, 'bookstore/index.html'),
       },
     },
   },

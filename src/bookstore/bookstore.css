@@ -1,0 +1,47 @@
+:root { --ink: #f3ece0; --muted: #b9ad9c; --copper: #d98a5a; --bg: #15110e; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink);
+  font: 16px/1.5 Georgia, "Palatino Linotype", serif; }
+#view { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+.screen { position: fixed; inset: 0; display: grid; place-items: center; z-index: 10;
+  background: radial-gradient(ellipse at center, rgba(21,17,14,0.55), rgba(21,17,14,0.92)); }
+.screen[hidden] { display: none; }
+.card { width: min(34rem, 90vw); padding: 2rem 2.2rem; border-radius: 0.9rem; background: rgba(30,24,20,0.86);
+  border: 1px solid rgba(255,235,200,0.12); box-shadow: 0 30px 80px rgba(0,0,0,0.5); backdrop-filter: blur(6px); }
+.eyebrow { text-transform: uppercase; letter-spacing: 0.18em; font: 600 0.72rem/1 "Gill Sans", "Helvetica Neue", sans-serif; color: var(--copper); margin: 0 0 0.8rem; }
+h1, h2 { margin: 0 0 0.8rem; font-weight: 400; letter-spacing: -0.01em; }
+h1 { font-size: 2rem; }
+.muted { color: var(--muted); }
+.small { font-size: 0.85rem; }
+a { color: var(--copper); }
+.keys { list-style: none; padding: 0; margin: 1rem 0 1.4rem; font: 0.92rem/1.9 "Gill Sans", "Helvetica Neue", sans-serif; color: var(--muted); }
+.keys b, #hint b { color: var(--ink); font-weight: 600; }
+.track { height: 4px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; margin: 1rem 0; }
+#bar { height: 100%; width: 0; background: var(--copper); transition: width .2s; }
+button.primary { font: 600 1rem "Gill Sans", "Helvetica Neue", sans-serif; padding: 0.75rem 1.5rem; border-radius: 999px; border: 0; cursor: pointer;
+  background: var(--copper); color: #1b0f08; }
+button.primary:hover { filter: brightness(1.08); }
+.btn.ghost { font: 0.8rem "Gill Sans", sans-serif; background: transparent; color: var(--muted); border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 0.4rem; padding: 0.25rem 0.6rem; cursor: pointer; }
+.btn.ghost:hover { color: var(--ink); border-color: var(--copper); }
+#held-list { list-style: none; padding: 0; margin: 0 0 1.4rem; max-height: 40vh; overflow: auto; }
+#held-list li { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.07); }
+#held-list em { color: var(--muted); }
+
+#hud { position: fixed; inset: 0; pointer-events: none; z-index: 5; opacity: 0; transition: opacity .4s; }
+#hud.active { opacity: 1; }
+#crosshair { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%;
+  background: rgba(255,248,235,0.75); box-shadow: 0 0 6px rgba(0,0,0,0.6); transition: transform .15s, background .15s; }
+#crosshair.on { transform: scale(1.8); background: var(--copper); }
+#label { position: absolute; left: 50%; top: calc(50% + 22px); transform: translateX(-50%); text-align: center;
+  background: rgba(20,16,13,0.72); padding: 0.4rem 0.8rem; border-radius: 0.45rem; backdrop-filter: blur(4px); white-space: nowrap; }
+#label strong { display: block; font-weight: 400; font-size: 1.05rem; }
+#label span, #label em { color: var(--muted); font-size: 0.85rem; }
+#hint { position: absolute; left: 50%; bottom: 1.1rem; transform: translateX(-50%); font: 0.82rem "Gill Sans", "Helvetica Neue", sans-serif;
+  color: var(--muted); background: rgba(20,16,13,0.6); padding: 0.45rem 0.9rem; border-radius: 999px; white-space: nowrap; }
+#pile { position: absolute; left: 1.2rem; bottom: 1.1rem; font: 0.9rem "Gill Sans", sans-serif; background: rgba(20,16,13,0.65);
+  padding: 0.45rem 0.8rem; border-radius: 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
+#pile .stack { width: 18px; height: 14px; border-radius: 2px; background: linear-gradient(#a3402c 0 30%, #e9e1cf 30% 40%, #1f3b2d 40% 70%, #e9e1cf 70% 80%, #c9952e 80%); }
+#pile.bump { animation: bump .4s ease-out; }
+@keyframes bump { 40% { transform: scale(1.25); } }
+#toast { position: absolute; left: 50%; top: 1.4rem; transform: translateX(-50%); background: rgba(20,16,13,0.8); padding: 0.5rem 1rem; border-radius: 0.5rem; font-size: 0.95rem; }

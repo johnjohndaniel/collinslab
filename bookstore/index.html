@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>collinslab books</title>
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/src/bookstore/bookstore.css" />
+</head>
+<body>
+  <canvas id="view" aria-label="A first-person bookstore"></canvas>
+
+  <div id="loading" class="screen">
+    <div class="card">
+      <p class="eyebrow">collinslab books</p>
+      <h1>Unlocking the door…</h1>
+      <div class="track"><div id="bar"></div></div>
+      <p id="loading-msg" class="muted">Brewing coffee, dusting shelves.</p>
+    </div>
+  </div>
+
+  <div id="intro" class="screen" hidden>
+    <div class="card">
+      <p class="eyebrow">collinslab books</p>
+      <h1>Come in, take your time.</h1>
+      <p>Wander the shelves with your coffee. Take any book down, turn it over, open it and leaf through the first pages. Put it back, or keep it for later.</p>
+      <ul class="keys">
+        <li><b>W A S D</b> walk · <b>Shift</b> faster · <b>mouse</b> look</li>
+        <li><b>Click</b> a book to take it off the shelf</li>
+        <li><b>Space</b> open · <b>← →</b> turn pages · <b>H</b> keep · <b>R</b> put back</li>
+      </ul>
+      <button id="enter" class="primary">Step inside</button>
+      <p class="muted small">Best with a mouse and keyboard. Sound on for the full effect.</p>
+    </div>
+  </div>
+
+  <div id="pause" class="screen" hidden>
+    <div class="card">
+      <p class="eyebrow">Paused</p>
+      <h2>Your pile</h2>
+      <p id="held-empty" class="muted">Nothing kept yet. Press <b>H</b> while holding a book to keep it.</p>
+      <ul id="held-list"></ul>
+      <button id="resume" class="primary">Back to the shelves</button>
+      <p class="muted small"><a href="/">collinslab.dev</a></p>
+    </div>
+  </div>
+
+  <div id="hud">
+    <div id="crosshair"></div>
+    <div id="label" hidden></div>
+    <div id="hint"></div>
+    <div id="pile" hidden><span class="stack"></span><span id="pile-count">0</span> kept</div>
+    <div id="toast" hidden></div>
+  </div>
+  <script type="module" src="/src/bookstore/main.js"></script>
+</body>
+</html>
