@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bookstore Concepts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Caveat:wght@500;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+<style>
+/* Board chrome is neutral graphite so each concept's own palette reads as a proposal.
+   Layout: one column of concept sections; each = pitch, desktop + phone mockups, flow strip, mechanics. */
+:root {
+  --paper: #f3f2ef;
+  --panel: #ffffff;
+  --ink: #1d1f22;
+  --muted: #5d6268;
+  --line: #d9d8d3;
+  --mark: #2f5d8a;          /* annotation blue */
+  --wire: #e7e6e2;          /* wireframe fills */
+  --wire-ink: #8b8f94;
+  --display: "Fraunces", Georgia, serif;
+  --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --hand: "Caveat", "Patrick Hand", cursive;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.55 var(--body); }
+a { color: var(--mark); }
+.wrap { max-width: 1240px; margin: 0 auto; padding: 40px 24px 96px; display: grid; gap: 72px; }
+header.top { display: grid; gap: 14px; max-width: 760px; }
+header.top h1 { font: 600 2.6rem/1.1 var(--display); margin: 0; text-wrap: balance; }
+header.top p { margin: 0; color: var(--muted); max-width: 64ch; }
+.keep { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.keep span { font: 500 0.78rem var(--mono); background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 3px 8px; color: var(--muted); }
+.toc { display: flex; flex-wrap: wrap; gap: 10px; font: 0.9rem var(--body); }
+.toc a { text-decoration: none; border: 1px solid var(--line); background: var(--panel); padding: 6px 12px; border-radius: 6px; color: var(--ink); }
+.toc a:hover, .toc a:focus-visible { border-color: var(--mark); outline: none; }
+
+section.concept { display: grid; gap: 22px; scroll-margin-top: 20px; }
+.concept-head { display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; align-items: baseline; }
+.letter { font: 600 3rem/1 var(--display); color: var(--mark); grid-row: span 2; }
+.concept-head h2 { font: 600 1.9rem/1.15 var(--display); margin: 0; text-wrap: balance; }
+.concept-head p { margin: 0; color: var(--muted); max-width: 70ch; }
+.label { font: 500 0.72rem/1 var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 8px; }
+
+.mockups { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 28px; align-items: start; }
+.device { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px; box-shadow: 0 1px 0 rgba(0,0,0,0.03), 0 12px 30px -18px rgba(0,0,0,0.25); }
+.browser-bar { display: flex; gap: 6px; align-items: center; padding: 2px 4px 9px; }
+.browser-bar i { width: 9px; height: 9px; border-radius: 50%; background: #d4d3ce; }
+.browser-bar span { margin-left: 10px; font: 0.72rem var(--mono); color: var(--wire-ink); background: #f1f0ec; border-radius: 4px; padding: 2px 10px; }
+.screen { container-type: inline-size; position: relative; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 6px; }
+.phone { border-radius: 30px; padding: 9px; }
+.phone .screen { aspect-ratio: 9 / 19; border-radius: 22px; }
+figcaption { font: 0.82rem/1.45 var(--body); color: var(--muted); margin-top: 10px; }
+
+.flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.step { display: grid; gap: 8px; }
+.wf { container-type: inline-size; aspect-ratio: 4 / 3; background: var(--panel); border: 1px dashed #b9b8b2; border-radius: 6px; position: relative; overflow: hidden; }
+.step p { margin: 0; font: 0.85rem/1.45 var(--body); }
+.step b { font: 500 0.72rem var(--mono); color: var(--mark); display: block; margin-bottom: 2px; }
+
+.notes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.note { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+.note h3 { font: 600 0.95rem var(--body); margin: 0 0 6px; }
+.note ul { margin: 0; padding-left: 1.1em; font-size: 0.9rem; }
+.note li { margin: 3px 0; }
+
+/* ---------- shared mock pieces (sized in container units so they scale) ---------- */
+.cv { position: relative; width: 100%; aspect-ratio: 2 / 3; background: var(--c, #355); color: var(--f, #f5ecd8); border-radius: 0.25cqw;
+  box-shadow: 0.25cqw 0.4cqw 0.9cqw rgba(0,0,0,0.25); display: flex; flex-direction: column; justify-content: space-between; padding: 7% 8%; overflow: hidden; }
+.cv b { font: 600 1.15cqw/1.1 var(--display); display: block; }
+.cv i { font: 0.8cqw/1.2 var(--body); font-style: normal; opacity: 0.85; }
+.cv::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5%; background: rgba(0,0,0,0.18); }
+.cv.band::before { content: ""; position: absolute; left: 0; right: 0; top: 38%; height: 26%; background: rgba(255,255,255,0.18); }
+.talker { font: 1.25cqw/1.15 var(--hand); color: #3a2f25; background: #fffaf0; border: 0.12cqw solid #e6dcc6; padding: 0.5cqw 0.7cqw; transform: rotate(-1.5deg);
+  box-shadow: 0.1cqw 0.25cqw 0.5cqw rgba(0,0,0,0.12); }
+.ann { position: absolute; font: 500 1.05cqw/1.2 var(--mono); color: #fff; background: var(--mark); padding: 0.35cqw 0.6cqw; border-radius: 0.4cqw; white-space: nowrap; z-index: 5; }
+.ann::before { content: attr(data-n); display: inline-block; margin-right: 0.5cqw; opacity: 0.7; }
+.wf .ann { font-size: 3.4cqw; padding: 1cqw 1.6cqw; }
+.box { position: absolute; background: var(--wire); border-radius: 1cqw; }
+.wtext { position: absolute; font: 3.2cqw/1.25 var(--mono); color: var(--wire-ink); }
+
+/* ---------- A: shop window ---------- */
+.a-screen { background: #f7f3ea; font-family: var(--body); color: #2b2620; }
+.a-nav { position: absolute; inset: 0 0 auto 0; height: 7.5cqw; display: flex; align-items: center; gap: 2cqw; padding: 0 3cqw; background: #fffdf7; border-bottom: 0.15cqw solid #e8e0cf; }
+.a-logo { font: 600 2cqw var(--display); color: #2f4a3b; }
+.a-search { flex: 1; height: 3.6cqw; border: 0.15cqw solid #ddd3bf; border-radius: 2cqw; display: flex; align-items: center; padding: 0 1.5cqw; font-size: 1.25cqw; color: #8a7f6c; background: #fff; }
+.a-link { font-size: 1.25cqw; color: #4a4033; }
+.a-bag { font-size: 1.25cqw; background: #2f4a3b; color: #fff; border-radius: 2cqw; padding: 0.8cqw 1.6cqw; }
+.a-hero { position: absolute; left: 3cqw; right: 3cqw; top: 10cqw; height: 25cqw; display: grid; grid-template-columns: 1.15fr 1fr; gap: 3cqw; align-items: center; }
+.a-hero svg { width: 100%; height: 100%; }
+.a-hero h3 { font: 600 3cqw/1.1 var(--display); margin: 0 0 1cqw; color: #2b2620; }
+.a-hero p { font-size: 1.35cqw; margin: 0 0 1.4cqw; color: #5d5446; }
+.a-btn { display: inline-block; font-size: 1.3cqw; background: #c46a3f; color: #fff; border-radius: 2cqw; padding: 0.8cqw 1.8cqw; }
+.a-row { position: absolute; left: 3cqw; right: 3cqw; display: grid; gap: 1.2cqw; }
+.a-row h4 { margin: 0; font: 600 1.6cqw var(--display); }
+.a-books { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2.2cqw; align-items: end; }
+.a-books .item { display: grid; gap: 0.8cqw; }
+
+/* ---------- B: dollhouse ---------- */
+.b-screen { background: #e9efe6; }
+.b-screen svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.b-side { position: absolute; right: 2cqw; top: 2cqw; display: grid; gap: 1cqw; width: 22cqw; }
+.b-pill { font: 1.25cqw var(--body); background: rgba(255,255,255,0.92); border-radius: 2cqw; padding: 0.9cqw 1.5cqw; color: #3b3a33; border: 0.12cqw solid #d8dccf; }
+.b-zoom { background: #2a2420; }
+.b-shelfrow { position: absolute; left: 4cqw; right: 4cqw; display: flex; gap: 1.6cqw; align-items: flex-end; padding-bottom: 1.1cqw; border-bottom: 1.4cqw solid #8a5a3b; }
+.b-shelfrow > * { flex: none; }
+.b-shelfrow .cv { width: 8cqw; height: 12cqw; aspect-ratio: auto; }
+.b-shelfrow .cv b { font-size: 1.15cqw; }
+.spine { width: 2.1cqw; height: 12cqw; border-radius: 0.2cqw; background: var(--c); box-shadow: inset -0.3cqw 0 0 rgba(0,0,0,0.18); }
+
+/* ---------- C: letters ---------- */
+.c-screen { background: #ece6db; font-family: var(--body); }
+.c-letter { position: absolute; left: 4cqw; top: 5cqw; width: 40cqw; bottom: 5cqw; background: #fffdf8; border-radius: 0.6cqw; box-shadow: 0 1cqw 3cqw rgba(60,40,20,0.15); padding: 3.5cqw;
+  background-image: repeating-linear-gradient(#fffdf8 0 3.3cqw, #ebe4d6 3.3cqw 3.42cqw); }
+.c-letter .hand { font: 2.5cqw/1.35 var(--hand); color: #2e3b56; }
+.c-field { margin-top: 1.6cqw; font: 1.2cqw var(--body); color: #8a8070; border-bottom: 0.15cqw solid #c9bfae; padding-bottom: 0.6cqw; }
+.c-chips { display: flex; flex-wrap: wrap; gap: 0.8cqw; margin-top: 1.6cqw; }
+.c-chips span { font: 1.15cqw var(--body); border: 0.15cqw solid #c7b9a2; border-radius: 2cqw; padding: 0.5cqw 1.1cqw; color: #4b4236; background: #fffdf8; }
+.c-chips span.on { background: #2e3b56; color: #fff; border-color: #2e3b56; }
+.c-stack { position: absolute; right: 4cqw; top: 6cqw; width: 46cqw; bottom: 6cqw; }
+.c-card { position: absolute; width: 15cqw; transform-origin: 50% 120%; }
+.c-card .talker { margin-top: 1cqw; }
+
+/* ---------- D: shelves as pages ---------- */
+.d-screen { background: #faf8f4; font-family: var(--body); color: #26231f; }
+.d-nav { position: absolute; inset: 0 0 auto 0; height: 6.5cqw; display: flex; align-items: center; gap: 2cqw; padding: 0 3cqw; border-bottom: 0.15cqw solid #e6e1d7; background: #fff; }
+.d-filters { position: absolute; left: 3cqw; top: 9cqw; width: 17cqw; display: grid; gap: 1.6cqw; font-size: 1.2cqw; color: #4c463e; }
+.d-filters b { font: 600 1.2cqw var(--body); display: block; margin-bottom: 0.4cqw; color: #26231f; }
+.d-filters span { display: block; padding: 0.25cqw 0; }
+.d-filters span.on::before { content: "● "; color: #9b4a2f; }
+.d-main { position: absolute; left: 23cqw; right: 3cqw; top: 9cqw; display: grid; gap: 3cqw; }
+.d-shelf h4 { margin: 0 0 1cqw; font: 600 1.6cqw var(--display); display: flex; justify-content: space-between; }
+.d-shelf h4 small { font: 1.1cqw var(--body); color: #8a8276; }
+.d-ledge { display: flex; gap: 0.5cqw; align-items: flex-end; height: 14.5cqw; padding: 0 1cqw 0.9cqw; border-bottom: 1.3cqw solid #b98a5e;
+  background: linear-gradient(#f3ece1, #ebe2d3); border-radius: 0.5cqw 0.5cqw 0 0; box-shadow: inset 0 -0.6cqw 1.2cqw rgba(80,50,20,0.12); overflow: hidden; }
+.d-ledge .cv { width: 8.6cqw; flex: none; }
+.d-ledge .spine { height: 12.5cqw; flex: none; }
+.lift { transform: translateY(-1.4cqw) rotate(-2deg); }
+
+/* phone screens share a simple frame */
+.ph-top { position: absolute; inset: 0 0 auto 0; height: 14cqw; display: flex; align-items: center; justify-content: space-between; padding: 0 5cqw; font: 600 5cqw var(--display); }
+.ph-tabs { position: absolute; inset: auto 0 0 0; height: 15cqw; display: grid; grid-template-columns: repeat(4, 1fr); place-items: center; font: 3.4cqw var(--body); border-top: 0.4cqw solid rgba(0,0,0,0.08); background: inherit; }
+.ph .cv b { font-size: 3.6cqw; } .ph .cv i { font-size: 2.6cqw; } .ph .talker { font-size: 4.2cqw; }
+
+/* comparison */
+table.compare { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; font-size: 0.92rem; }
+.compare th, .compare td { padding: 10px 14px; border-bottom: 1px solid var(--line); text-align: left; }
+.compare th { font: 500 0.75rem var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); background: #fafaf8; }
+.dots { font-family: var(--mono); letter-spacing: 0.15em; color: var(--mark); white-space: nowrap; }
+.dots .off { color: #c9c8c3; }
+.table-wrap { overflow-x: auto; }
+
+/* questions */
+.qs { display: grid; gap: 14px; counter-reset: q; }
+.q { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; display: grid; gap: 8px; }
+.q h3 { margin: 0; font: 600 1.05rem var(--body); }
+.q h3::before { counter-increment: q; content: counter(q) ". "; color: var(--mark); }
+.q ul { margin: 0; padding-left: 1.1em; color: var(--ink); }
+.q p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+
+@media (max-width: 900px) {
+  .mockups { grid-template-columns: 1fr; }
+  .mockups .phone { max-width: 280px; }
+  .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .notes { grid-template-columns: 1fr; }
+}
+@media (max-width: 420px) { .flow { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: no-preference) { .toc a { transition: border-color .15s; } }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+<header class="top">
+  <p class="label">collinslab books · design board · round 1</p>
+  <h1>Four ways to be a small bookshop online</h1>
+  <p>Each concept below is a cosier, more familiar alternative to the walk-through store. Every one keeps the same core: a few books chosen for you, real covers, the book you can pick up and leaf through, and buying through Bookshop.org. They differ in how you arrive, how you move around, and how much of a "place" the shop feels like. Blue tags mark the mechanics; the flow strips show the key screens in order.</p>
+  <div class="keep"><span>kept: curated, few options</span><span>kept: 3D book in hand</span><span>kept: classics + recent</span><span>kept: Bookshop.org</span><span>dropped: walking, game controls</span></div>
+  <nav class="toc" aria-label="Concepts">
+    <a href="#a">A · The shop window</a><a href="#b">B · The dollhouse</a><a href="#c">C · Letters from the shop</a><a href="#d">D · Shelves as pages</a><a href="#compare">Side by side</a><a href="#questions">Questions for you</a>
+  </nav>
+</header>
+
+<!-- =============================== A =============================== -->
+<section class="concept" id="a">
+  <div class="concept-head"><span class="letter">A</span><h2>The shop window</h2>
+    <p>A traditional online bookstore wearing a warm face. You land on an illustrated shopfront with this week's window display; underneath is an ordinary, very usable store. The magic is kept for one moment: clicking a book lifts it into your hands.</p></div>
+  <div class="mockups">
+    <figure style="margin:0">
+      <div class="device"><div class="browser-bar"><i></i><i></i><i></i><span>collinslab.dev/books</span></div>
+      <div class="screen a-screen">
+        <div class="a-nav"><span class="a-logo">collinslab books</span><span class="a-search">Search titles, authors, moods…</span><span class="a-link">Sections</span><span class="a-link">Staff picks</span><span class="a-bag">Bag · 2</span></div>
+        <div class="a-hero">
+          <svg viewBox="0 0 520 250" role="img" aria-label="Illustrated shopfront with a striped awning, a window display of books and a cat in the window">
+            <rect x="20" y="20" width="480" height="230" rx="6" fill="#2f4a3b"/>
+            <rect x="40" y="20" width="440" height="34" fill="#f2e6cc"/>
+            <text x="260" y="44" text-anchor="middle" font-family="Fraunces, serif" font-size="20" fill="#2f4a3b">collinslab books</text>
+            <g>
+              <path d="M20 54 h480 l-10 40 h-460 z" fill="#c46a3f"/>
+              <path d="M70 54 l-8 40 h40 l8-40z M150 54 l-8 40 h40 l8-40z M230 54 l-8 40 h40 l8-40z M310 54 l-8 40 h40 l8-40z M390 54 l-8 40 h40 l8-40z" fill="#f2e6cc"/>
+            </g>
+            <rect x="45" y="105" width="290" height="130" rx="4" fill="#fbe9c4"/>
+            <rect x="45" y="105" width="290" height="130" rx="4" fill="url(#glow)"/>
+            <rect x="60" y="200" width="260" height="10" fill="#8a5a3b"/>
+            <rect x="72" y="140" width="38" height="60" fill="#3a5a8a"/><rect x="118" y="132" width="40" height="68" fill="#b6453a"/><rect x="166" y="146" width="36" height="54" fill="#e3c25a"/>
+            <rect x="210" y="136" width="40" height="64" fill="#3f6b55"/><rect x="258" y="142" width="38" height="58" fill="#efe5d2"/>
+            <path d="M282 200 q4-16 16-16 q12 0 14 16z" fill="#2b2622"/><circle cx="296" cy="180" r="7" fill="#2b2622"/><path d="M290 175 l2-7 4 5z M298 173 l4-5 1 7z" fill="#2b2622"/>
+            <rect x="355" y="105" width="125" height="145" rx="4" fill="#24392d"/><rect x="368" y="118" width="99" height="70" rx="3" fill="#fbe9c4" opacity="0.85"/>
+            <circle cx="455" cy="180" r="4" fill="#d9b25b"/>
+            <rect x="372" y="200" width="90" height="26" rx="3" fill="#f2e6cc"/><text x="417" y="218" text-anchor="middle" font-family="Caveat, cursive" font-size="17" fill="#2f4a3b">come in!</text>
+            <defs><radialGradient id="glow" cx="50%" cy="40%" r="70%"><stop offset="0" stop-color="#fff6dc" stop-opacity="0.7"/><stop offset="1" stop-color="#fbe9c4" stop-opacity="0"/></radialGradient></defs>
+          </svg>
+          <div>
+            <h3>In the window this week: strange, quiet novels</h3>
+            <p>Five books for long evenings, chosen by the shop. The display changes every Friday.</p>
+            <span class="a-btn">Look in the window</span>
+          </div>
+        </div>
+        <div class="a-row" style="top:38cqw">
+          <h4>Chosen for you</h4>
+          <div class="a-books">
+            <div class="item"><div class="cv band" style="--c:#2d3f5c"><b>Piranesi</b><i>Susanna Clarke</i></div></div>
+            <div class="item"><div class="cv" style="--c:#6b2a2a"><b>Hamnet</b><i>Maggie O'Farrell</i></div></div>
+            <div class="item"><div class="cv" style="--c:#c9952e;--f:#1d1a16"><b>Walden</b><i>Thoreau</i></div></div>
+            <div class="item"><div class="cv band" style="--c:#3f6b55"><b>Braiding Sweetgrass</b><i>R. W. Kimmerer</i></div></div>
+            <div class="item"><div class="cv" style="--c:#151515"><b>Frankenstein</b><i>Mary Shelley</i></div></div>
+            <div class="item"><div class="cv band" style="--c:#7d5a8a"><b>Klara and the Sun</b><i>K. Ishiguro</i></div></div>
+            <div class="item"><div class="cv" style="--c:#a7562b"><b>The Wild Robot</b><i>Peter Brown</i></div></div>
+          </div>
+        </div>
+        <div class="talker" style="position:absolute;left:4cqw;top:58cqw;width:15cqw">“if you liked <u>Jonathan Strange</u>, this is gentler”</div>
+        <div class="talker" style="position:absolute;left:30cqw;top:58.5cqw;width:13cqw;transform:rotate(1.5deg)">read it in one sitting</div>
+        <div class="a-row" style="top:66cqw"><h4>New arrivals · Classics on the back table · Your shelf</h4></div>
+        <span class="ann" data-n="1" style="left:18cqw;top:8.5cqw">search + sections, always there</span>
+        <span class="ann" data-n="2" style="left:44cqw;top:31cqw">window changes weekly</span>
+        <span class="ann" data-n="3" style="left:62cqw;top:56cqw">click a cover → 3D book</span>
+      </div></div>
+      <figcaption>Desktop landing. The illustration sets the mood; everything below it behaves like a normal shop.</figcaption>
+    </figure>
+    <figure style="margin:0">
+      <div class="device phone"><div class="screen a-screen ph">
+        <div class="ph-top" style="color:#2f4a3b;background:#fffdf7">collinslab books <span style="font:3.6cqw var(--body);color:#5d5446">Bag 2</span></div>
+        <svg viewBox="0 0 300 150" style="position:absolute;left:5cqw;right:5cqw;top:17cqw;width:90cqw" aria-hidden="true">
+          <rect x="0" y="0" width="300" height="150" rx="8" fill="#2f4a3b"/><path d="M0 18 h300 l-8 26 h-284z" fill="#c46a3f"/>
+          <rect x="16" y="56" width="268" height="84" rx="4" fill="#fbe9c4"/><rect x="30" y="122" width="240" height="8" fill="#8a5a3b"/>
+          <rect x="44" y="84" width="30" height="38" fill="#3a5a8a"/><rect x="82" y="78" width="32" height="44" fill="#b6453a"/><rect x="122" y="88" width="28" height="34" fill="#e3c25a"/><rect x="158" y="80" width="32" height="42" fill="#3f6b55"/>
+          <path d="M216 122 q4-14 14-14 q10 0 12 14z" fill="#2b2622"/><circle cx="228" cy="104" r="6" fill="#2b2622"/>
+        </svg>
+        <div style="position:absolute;left:5cqw;right:5cqw;top:70cqw;font:600 5.4cqw/1.15 var(--display)">In the window: strange, quiet novels</div>
+        <div style="position:absolute;left:5cqw;right:5cqw;top:88cqw;height:9cqw;border:0.5cqw solid #ddd3bf;border-radius:5cqw;background:#fff;font:3.6cqw var(--body);color:#8a7f6c;display:flex;align-items:center;padding:0 4cqw">Search books, moods…</div>
+        <div style="position:absolute;left:5cqw;top:104cqw;font:600 4.4cqw var(--display)">Chosen for you</div>
+        <div style="position:absolute;left:5cqw;right:-20cqw;top:112cqw;display:grid;grid-template-columns:repeat(4,26cqw);gap:4cqw">
+          <div class="cv band" style="--c:#2d3f5c"><b>Piranesi</b><i>Clarke</i></div><div class="cv" style="--c:#6b2a2a"><b>Hamnet</b><i>O'Farrell</i></div>
+          <div class="cv" style="--c:#c9952e;--f:#1d1a16"><b>Walden</b><i>Thoreau</i></div><div class="cv" style="--c:#151515"><b>Frankenstein</b><i>Shelley</i></div>
+        </div>
+        <div class="talker" style="position:absolute;left:6cqw;top:156cqw;width:40cqw">read it in one sitting</div>
+        <div class="ph-tabs" style="background:#fffdf7;color:#4a4033"><span>Shop</span><span>Search</span><span>Picks</span><span>Bag</span></div>
+      </div></div>
+      <figcaption>Phone: the window shrinks to a banner; rows scroll sideways; a familiar tab bar.</figcaption>
+    </figure>
+  </div>
+  <div>
+    <p class="label">Flow</p>
+    <div class="flow">
+      <div class="step"><div class="wf"><div class="box" style="left:6%;top:6%;right:6%;height:12%"></div><div class="box" style="left:6%;top:24%;width:52%;height:36%;background:#dfe7e1"></div><div class="wtext" style="left:62%;top:28%">window<br>display</div>
+        <div class="box" style="left:6%;top:68%;width:14%;height:24%"></div><div class="box" style="left:24%;top:68%;width:14%;height:24%"></div><div class="box" style="left:42%;top:68%;width:14%;height:24%"></div><div class="box" style="left:60%;top:68%;width:14%;height:24%"></div></div>
+        <p><b>1 · arrive</b>Shopfront, this week's window, and books chosen for you.</p></div>
+      <div class="step"><div class="wf"><div class="box" style="left:6%;top:6%;right:6%;height:10%"></div><div class="wtext" style="left:6%;top:22%">Poetry &amp; Drama · 214</div>
+        <div class="box" style="left:6%;top:34%;width:20%;height:30%"></div><div class="box" style="left:30%;top:34%;width:20%;height:30%"></div><div class="box" style="left:54%;top:34%;width:20%;height:30%"></div><div class="box" style="left:78%;top:34%;width:16%;height:30%"></div>
+        <div class="box" style="left:6%;top:68%;width:20%;height:9%;background:#fbf3df"></div><div class="wtext" style="left:6%;top:82%">grid, filters, shelf-talkers</div></div>
+        <p><b>2 · browse a section</b>A normal grid, but with handwritten notes on some books.</p></div>
+      <div class="step"><div class="wf" style="background:#efeeea"><div class="box" style="left:18%;top:14%;width:30%;height:66%;background:#cdd6dc"></div><div class="wtext" style="left:22%;top:42%">3D book</div>
+        <div class="box" style="left:56%;top:14%;width:36%;height:66%;background:#fff;border:1px solid #ddd"></div><div class="wtext" style="left:59%;top:20%">title<br>note<br>open · keep<br>buy ↗</div>
+        <span class="ann" data-n="3" style="left:18%;top:84%">the magic moment</span></div>
+        <p><b>3 · pick it up</b>The book lifts out of the page. Turn it over, open it, leaf through.</p></div>
+      <div class="step"><div class="wf"><div class="box" style="left:8%;top:10%;width:38%;height:76%;background:#e8dcc6"></div><div class="wtext" style="left:12%;top:40%">paper<br>bag</div>
+        <div class="wtext" style="left:52%;top:14%">Bag (2)<br>Piranesi<br>Hamnet<br><br>[ check out ↗ ]</div></div>
+        <p><b>4 · bag and buy</b>A paper bag, then checkout through Bookshop.org.</p></div>
+    </div>
+  </div>
+  <div class="notes">
+    <div class="note"><h3>Mechanics</h3><ul><li>Regular navigation: search, sections, filters</li><li>One 3D moment: the book in your hands</li><li>"Your shelf" row learns from what you keep</li></ul></div>
+    <div class="note"><h3>Good at</h3><ul><li>Instantly understood; feels trustworthy for buying</li><li>Scales to a huge catalogue</li><li>Great on phones</li></ul></div>
+    <div class="note"><h3>Watch out</h3><ul><li>Can drift into "any online store" without a strong voice</li><li>The shop feeling lives mostly in the illustration and the notes</li></ul></div>
+  </div>
+</section>
+
+<!-- =============================== B =============================== -->
+<section class="concept" id="b">
+  <div class="concept-head"><span class="letter">B</span><h2>The dollhouse</h2>
+    <p>The whole shop as one hand-painted cutaway, like a dollhouse with the front wall off. Nooks are the sections. You never walk: you click a nook and lean in, and that shelf becomes a row of real covers you can scroll.</p></div>
+  <div class="mockups">
+    <figure style="margin:0">
+      <div class="device"><div class="browser-bar"><i></i><i></i><i></i><span>collinslab.dev/books</span></div>
+      <div class="screen b-screen">
+        <svg viewBox="0 0 1000 625" role="img" aria-label="Cutaway of a two-storey bookshop with labelled nooks: window, poetry corner, kids' rug, counter with a cat, new arrivals table and an attic">
+          <rect width="1000" height="625" fill="#e9efe6"/>
+          <path d="M120 170 L420 40 L720 170 Z" fill="#8f4b37"/>
+          <rect x="140" y="170" width="560" height="420" fill="#f5e8cf" stroke="#6b4a33" stroke-width="10"/>
+          <line x1="140" y1="380" x2="700" y2="380" stroke="#6b4a33" stroke-width="10"/>
+          <line x1="420" y1="170" x2="420" y2="590" stroke="#6b4a33" stroke-width="8"/>
+          <!-- upstairs left: poetry corner -->
+          <rect x="160" y="200" width="70" height="160" fill="#8a5a3b"/><g fill="#3a5a8a"><rect x="168" y="214" width="10" height="34"/><rect x="180" y="210" width="9" height="38"/></g><g fill="#b6453a"><rect x="192" y="216" width="10" height="32"/><rect x="204" y="212" width="12" height="36"/></g>
+          <g fill="#e3c25a"><rect x="168" y="262" width="12" height="34"/><rect x="183" y="258" width="10" height="38"/></g><g fill="#3f6b55"><rect x="196" y="264" width="10" height="32"/><rect x="208" y="260" width="12" height="36"/></g>
+          <path d="M300 300 q0-40 40-40 q40 0 40 40 v60 h-80z" fill="#c97f5a"/><rect x="290" y="330" width="100" height="30" rx="8" fill="#a8613f"/>
+          <rect x="250" y="210" width="70" height="40" fill="#fffaf0" stroke="#d8c8a8"/><text x="285" y="236" text-anchor="middle" font-family="Caveat, cursive" font-size="18" fill="#3a2f25">poems</text>
+          <!-- upstairs right: attic / your shelf -->
+          <rect x="450" y="210" width="220" height="12" fill="#8a5a3b"/><rect x="450" y="290" width="220" height="12" fill="#8a5a3b"/>
+          <g><rect x="460" y="168" width="22" height="42" fill="#7d5a8a"/><rect x="486" y="172" width="18" height="38" fill="#2d3f5c"/><rect x="508" y="166" width="24" height="44" fill="#c9952e"/></g>
+          <g><rect x="460" y="246" width="20" height="44" fill="#6b2a2a"/><rect x="484" y="250" width="22" height="40" fill="#3f6b55"/></g>
+          <circle cx="620" cy="250" r="26" fill="#f2d67a" opacity="0.6"/><rect x="612" y="250" width="16" height="40" fill="#5a4a3a"/>
+          <!-- downstairs left: window display + cat -->
+          <rect x="160" y="400" width="240" height="170" fill="#fbe9c4"/><rect x="170" y="520" width="220" height="12" fill="#8a5a3b"/>
+          <rect x="185" y="470" width="32" height="50" fill="#3a5a8a"/><rect x="225" y="462" width="34" height="58" fill="#b6453a"/><rect x="268" y="474" width="30" height="46" fill="#e3c25a"/>
+          <path d="M320 520 q4-18 18-18 q14 0 16 18z" fill="#2b2622"/><circle cx="337" cy="498" r="8" fill="#2b2622"/><path d="M330 492 l2-8 4 6z M340 490 l4-6 2 8z" fill="#2b2622"/>
+          <!-- downstairs right: counter + new table -->
+          <rect x="450" y="490" width="120" height="80" fill="#8a5a3b"/><rect x="440" y="480" width="140" height="14" fill="#b98a5e"/>
+          <rect x="470" y="452" width="22" height="28" fill="#fff" stroke="#c9b9a0"/><path d="M478 452 q6-14 2-26" stroke="#ccc" fill="none"/>
+          <rect x="590" y="500" width="90" height="10" fill="#b98a5e"/><rect x="596" y="510" width="8" height="60" fill="#8a5a3b"/><rect x="666" y="510" width="8" height="60" fill="#8a5a3b"/>
+          <rect x="600" y="478" width="18" height="22" fill="#a7562b"/><rect x="624" y="482" width="18" height="18" fill="#2d3f5c"/><rect x="648" y="476" width="18" height="24" fill="#3f6b55"/>
+          <rect x="140" y="590" width="560" height="14" fill="#6b4a33"/>
+          <ellipse cx="300" cy="600" rx="90" ry="8" fill="#b6453a" opacity="0.6"/>
+        </svg>
+        <div class="b-side"><span class="b-pill">Search…</span><span class="b-pill">Bag · 1</span><span class="b-pill" style="background:#fffaf0;font-family:var(--hand);font-size:1.7cqw">The cat is asleep in the window again.</span></div>
+        <span class="ann" data-n="1" style="left:14cqw;top:26cqw">poetry corner</span>
+        <span class="ann" data-n="2" style="left:46cqw;top:22cqw">your shelf (attic)</span>
+        <span class="ann" data-n="3" style="left:17cqw;top:58cqw">window · this week</span>
+        <span class="ann" data-n="4" style="left:46cqw;top:68cqw">counter = bag · new table</span>
+        <span class="ann" data-n="5" style="left:73cqw;top:40cqw">hover a nook → it glows + a note</span>
+      </div></div>
+      <figcaption>Desktop: the whole shop at once. Hovering a nook warms its light and shows a one-line note.</figcaption>
+    </figure>
+    <figure style="margin:0">
+      <div class="device phone"><div class="screen b-screen ph" style="background:#e9efe6">
+        <div class="ph-top" style="color:#5a3a26">collinslab books</div>
+        <svg viewBox="0 0 300 560" style="position:absolute;left:6cqw;width:88cqw;top:16cqw" aria-hidden="true">
+          <path d="M20 80 L150 10 L280 80Z" fill="#8f4b37"/>
+          <rect x="30" y="80" width="240" height="460" fill="#f5e8cf" stroke="#6b4a33" stroke-width="6"/>
+          <line x1="30" y1="230" x2="270" y2="230" stroke="#6b4a33" stroke-width="6"/><line x1="30" y1="385" x2="270" y2="385" stroke="#6b4a33" stroke-width="6"/>
+          <text x="150" y="120" text-anchor="middle" font-family="Caveat, cursive" font-size="22" fill="#5a3a26">attic · your shelf</text>
+          <rect x="60" y="150" width="180" height="8" fill="#8a5a3b"/><rect x="70" y="122" width="14" height="28" fill="#7d5a8a"/><rect x="88" y="126" width="12" height="24" fill="#2d3f5c"/>
+          <text x="150" y="270" text-anchor="middle" font-family="Caveat, cursive" font-size="22" fill="#5a3a26">fiction · poetry</text>
+          <rect x="60" y="320" width="180" height="8" fill="#8a5a3b"/><rect x="70" y="288" width="14" height="32" fill="#b6453a"/><rect x="88" y="292" width="16" height="28" fill="#3f6b55"/><rect x="108" y="286" width="12" height="34" fill="#e3c25a"/>
+          <text x="150" y="425" text-anchor="middle" font-family="Caveat, cursive" font-size="22" fill="#5a3a26">window · counter</text>
+          <rect x="50" y="440" width="120" height="80" fill="#fbe9c4"/><path d="M130 520 q3-14 13-14 q10 0 12 14z" fill="#2b2622"/><circle cx="142" cy="502" r="6" fill="#2b2622"/>
+          <rect x="190" y="470" width="60" height="50" fill="#8a5a3b"/>
+        </svg>
+        <span class="ann" data-n="↕" style="left:24cqw;top:178cqw;font-size:3.4cqw">scroll the building floor by floor</span>
+      </div></div>
+      <figcaption>Phone: the shop becomes a tall, narrow building. Scroll through floors; tap one to lean in.</figcaption>
+    </figure>
+  </div>
+  <div>
+    <p class="label">Leaning in to a nook (the second screen)</p>
+    <div class="device"><div class="screen" style="aspect-ratio:16/6;background:#2c2521">
+      <div style="position:absolute;left:4cqw;top:2.5cqw;font:1.3cqw var(--body);color:#d8c9b2">Shop › <span style="color:#fff">Poetry corner</span> · 18 books · lit by the reading lamp</div>
+      <div class="b-shelfrow" style="top:6cqw;height:21cqw">
+        <div class="cv" style="--c:#1f3b2d"><b>Leaves of Grass</b><i>Whitman</i></div>
+        <div class="spine" style="--c:#b6453a"></div><div class="spine" style="--c:#e3c25a;height:13cqw"></div>
+        <div class="cv band" style="--c:#2d3f5c"><b>Citizen</b><i>Claudia Rankine</i></div>
+        <div class="spine" style="--c:#3f6b55;height:11cqw"></div>
+        <div class="cv" style="--c:#7d5a8a"><b>Wade in the Water</b><i>Tracy K. Smith</i></div>
+        <div class="talker" style="align-self:center;width:13cqw">start here if you think you don't like poetry</div>
+        <div class="cv" style="--c:#6b1e1e"><b>Hamlet</b><i>Shakespeare</i></div>
+        <div class="spine" style="--c:#c9952e"></div><div class="spine" style="--c:#151515;height:12.5cqw"></div>
+        <div class="cv band" style="--c:#a7562b"><b>Sweat</b><i>Lynn Nottage</i></div>
+      </div>
+      <span class="ann" data-n="↔" style="left:60cqw;top:2cqw">swipe / scroll the shelf · click a book → 3D</span>
+    </div></div>
+  </div>
+  <div class="notes">
+    <div class="note"><h3>Mechanics</h3><ul><li>Click a nook: the camera eases in (a zoom, not a walk)</li><li>Each nook = one curated shelf of 12–20 books</li><li>Search and bag float quietly at the side</li></ul></div>
+    <div class="note"><h3>Good at</h3><ul><li>Cutest and most "mom-and-pop"</li><li>A real sense of place without game controls</li><li>Seasonal changes (snow on the roof, a pumpkin on the counter)</li></ul></div>
+    <div class="note"><h3>Watch out</h3><ul><li>Needs good illustration, the biggest art task</li><li>A fixed number of nooks: very large catalogues need search to carry them</li></ul></div>
+  </div>
+</section>
+
+<!-- =============================== C =============================== -->
+<section class="concept" id="c">
+  <div class="concept-head"><span class="letter">C</span><h2>Letters from the shop</h2>
+    <p>The most personal version. The shopkeeper writes you a short letter with a few questions; a small stack of books arrives on the counter, each with a note on why it suits you. You flip through, set some aside, ask for more like one, and check out. Very few options at any moment.</p></div>
+  <div class="mockups">
+    <figure style="margin:0">
+      <div class="device"><div class="browser-bar"><i></i><i></i><i></i><span>collinslab.dev/books</span></div>
+      <div class="screen c-screen">
+        <div class="c-letter">
+          <div class="hand">Dear John,</div>
+          <div class="hand" style="margin-top:0.6cqw">What's the last book you couldn't put down? Tell me, and how you're feeling, and I'll set a few aside for you.</div>
+          <div class="c-field">A book you loved lately… <span style="color:#2e3b56">Piranesi</span></div>
+          <div class="c-chips"><span class="on">something strange</span><span>comforting</span><span class="on">short</span><span>big and absorbing</span><span>non-fiction</span></div>
+          <div class="hand" style="margin-top:1.6cqw;font-size:2.1cqw">— Margot (and Biscuit, the cat)</div>
+        </div>
+        <div class="c-stack">
+          <div class="c-card" style="left:0;top:4cqw;transform:rotate(-9deg)"><div class="cv" style="--c:#2d3f5c"><b>Klara and the Sun</b><i>K. Ishiguro</i></div></div>
+          <div class="c-card" style="left:9cqw;top:1cqw;transform:rotate(-3deg)"><div class="cv band" style="--c:#1f3b2d"><b>The Invisible Life of Addie LaRue</b><i>V. E. Schwab</i></div></div>
+          <div class="c-card" style="left:18cqw;top:0;transform:rotate(2deg);z-index:2"><div class="cv" style="--c:#6b2a2a"><b>Hamnet</b><i>Maggie O'Farrell</i></div>
+            <div class="talker" style="width:18cqw">Grief and plague, but tender. Not strange, but you'll love the strangeness of its quiet.</div></div>
+          <div class="c-card" style="left:29cqw;top:3cqw;transform:rotate(7deg)"><div class="cv" style="--c:#c9952e;--f:#1d1a16"><b>Flatland</b><i>Edwin Abbott</i></div></div>
+        </div>
+        <div style="position:absolute;right:4cqw;bottom:4cqw;display:flex;gap:1cqw;font:1.25cqw var(--body)">
+          <span style="background:#2e3b56;color:#fff;border-radius:2cqw;padding:0.8cqw 1.6cqw">Set aside</span><span style="border:0.15cqw solid #b9ab92;border-radius:2cqw;padding:0.8cqw 1.6cqw;color:#4b4236">More like this</span><span style="padding:0.8cqw 1cqw;color:#7d7262">Not for me</span></div>
+        <span class="ann" data-n="1" style="left:5cqw;top:2cqw">3 questions, in a letter</span>
+        <span class="ann" data-n="2" style="left:52cqw;top:2cqw">a stack of 5, each with a reason</span>
+        <span class="ann" data-n="3" style="left:58cqw;top:52cqw">click a book → 3D, then decide</span>
+      </div></div>
+      <figcaption>Desktop: the letter on the left, your stack on the right. The shopkeeper has a name and a cat.</figcaption>
+    </figure>
+    <figure style="margin:0">
+      <div class="device phone"><div class="screen c-screen ph">
+        <div class="ph-top" style="color:#2e3b56">Your stack <span style="font:3.6cqw var(--body);color:#7d7262">2 of 5</span></div>
+        <div style="position:absolute;left:14cqw;right:14cqw;top:22cqw;transform:rotate(-4deg);opacity:0.6"><div class="cv" style="--c:#2d3f5c"><b>&nbsp;</b><i>&nbsp;</i></div></div>
+        <div style="position:absolute;left:12cqw;right:12cqw;top:20cqw"><div class="cv" style="--c:#6b2a2a"><b>Hamnet</b><i>Maggie O'Farrell</i></div></div>
+        <div class="talker" style="position:absolute;left:8cqw;right:8cqw;top:136cqw">Grief and plague, but tender. You'll love its quiet.</div>
+        <div style="position:absolute;left:6cqw;right:6cqw;top:162cqw;display:grid;grid-template-columns:1fr 1fr 1fr;gap:3cqw;font:3.4cqw var(--body);text-align:center">
+          <span style="border:0.4cqw solid #b9ab92;border-radius:5cqw;padding:2cqw 0">← not for me</span><span style="border:0.4cqw solid #b9ab92;border-radius:5cqw;padding:2cqw 0">more like it</span><span style="background:#2e3b56;color:#fff;border-radius:5cqw;padding:2cqw 0">set aside →</span></div>
+      </div></div>
+      <figcaption>Phone: one book at a time, like a hand of cards. Swipe right to set aside.</figcaption>
+    </figure>
+  </div>
+  <div>
+    <p class="label">Flow</p>
+    <div class="flow">
+      <div class="step"><div class="wf" style="background:#fbf8f1"><div class="wtext" style="left:8%;top:10%">Dear John,<br>what did you<br>love lately?</div><div class="box" style="left:8%;top:58%;width:60%;height:8%"></div><div class="box" style="left:8%;top:72%;width:20%;height:8%;border-radius:4cqw"></div><div class="box" style="left:32%;top:72%;width:20%;height:8%;border-radius:4cqw"></div></div>
+        <p><b>1 · a letter</b>Three gentle questions. Skippable: "just show me something".</p></div>
+      <div class="step"><div class="wf"><div class="box" style="left:20%;top:16%;width:16%;height:50%;transform:rotate(-8deg)"></div><div class="box" style="left:38%;top:12%;width:16%;height:50%"></div><div class="box" style="left:56%;top:16%;width:16%;height:50%;transform:rotate(8deg)"></div><div class="wtext" style="left:20%;top:76%">a stack arrives on the counter</div></div>
+        <p><b>2 · the stack</b>Five books, each with a handwritten reason.</p></div>
+      <div class="step"><div class="wf" style="background:#efeeea"><div class="box" style="left:20%;top:14%;width:30%;height:66%;background:#cdd6dc"></div><div class="wtext" style="left:56%;top:30%">set aside<br>more like this<br>not for me</div></div>
+        <p><b>3 · look closer</b>Pick one up in 3D; decide with one tap.</p></div>
+      <div class="step"><div class="wf"><div class="wtext" style="left:8%;top:12%">✉ a new stack is in<br><br>"Three more strange,<br>short books came in…"</div></div>
+        <p><b>4 · come back</b>Set-aside books go to the bag; the shop writes when a new stack is ready.</p></div>
+    </div>
+  </div>
+  <div class="notes">
+    <div class="note"><h3>Mechanics</h3><ul><li>Questions → stack of 5 → decide each</li><li>"More like this" refills the stack from that book's neighbours</li><li>Optional emails: "a new stack came in"</li></ul></div>
+    <div class="note"><h3>Good at</h3><ul><li>Most bespoke; fewest options at a time</li><li>Excellent on phones</li><li>Recommendation quality is the product</li></ul></div>
+    <div class="note"><h3>Watch out</h3><ul><li>Less browsing freedom: needs a quiet "see the whole shop" escape hatch</li><li>The notes must be good; generic notes would feel fake</li></ul></div>
+  </div>
+</section>
+
+<!-- =============================== D =============================== -->
+<section class="concept" id="d">
+  <div class="concept-head"><span class="letter">D</span><h2>Shelves as pages</h2>
+    <p>The familiar layout of an online bookstore (sections, filters, search), except every list is drawn as a softly lit shelf: spines and face-out covers, a bookend, the odd shelf-talker. Hovering a book tilts it out; clicking pulls it into your hands.</p></div>
+  <div class="mockups">
+    <figure style="margin:0">
+      <div class="device"><div class="browser-bar"><i></i><i></i><i></i><span>collinslab.dev/books/fiction</span></div>
+      <div class="screen d-screen">
+        <div class="d-nav"><span style="font:600 1.9cqw var(--display);color:#9b4a2f">collinslab books</span><span style="flex:1;height:3.4cqw;border:0.15cqw solid #e0d9cc;border-radius:2cqw;display:flex;align-items:center;padding:0 1.4cqw;font-size:1.2cqw;color:#9b9284">Search…</span><span style="font-size:1.2cqw">Bag · 1</span></div>
+        <div class="d-filters">
+          <div><b>Fiction</b><span class="on">All fiction</span><span>Literary</span><span>Historical</span><span>Speculative</span></div>
+          <div><b>Era</b><span class="on">New</span><span>Classics</span></div>
+          <div><b>Mood</b><span>Comforting</span><span class="on">Strange</span><span>Big &amp; absorbing</span></div>
+          <div><b>Length</b><span>Under 250 pages</span></div>
+        </div>
+        <div class="d-main">
+          <div class="d-shelf"><h4>Strange and new <small>24 books · scroll →</small></h4>
+            <div class="d-ledge">
+              <div class="cv band" style="--c:#2d3f5c"><b>Piranesi</b><i>Clarke</i></div><div class="spine" style="--c:#6b2a2a"></div><div class="spine" style="--c:#c9952e"></div>
+              <div class="cv lift" style="--c:#7d5a8a"><b>Klara and the Sun</b><i>Ishiguro</i></div><div class="spine" style="--c:#3f6b55;height:11.5cqw"></div>
+              <div class="cv" style="--c:#151515"><b>Lincoln in the Bardo</b><i>Saunders</i></div><div class="spine" style="--c:#a7562b"></div><div class="spine" style="--c:#2d3f5c;height:12cqw"></div>
+              <div class="talker" style="align-self:center;width:11cqw;flex:none">ghosts, but funny</div>
+              <div class="cv band" style="--c:#1f3b2d"><b>The Overstory</b><i>Powers</i></div>
+            </div></div>
+          <div class="d-shelf"><h4>On the back table: classics <small>64 books</small></h4>
+            <div class="d-ledge" style="height:13cqw">
+              <div class="spine" style="--c:#1f3b2d"></div><div class="spine" style="--c:#6b1e1e"></div><div class="cv" style="--c:#c9952e;--f:#1d1a16;width:7.8cqw"><b>Middlemarch</b><i>Eliot</i></div><div class="spine" style="--c:#1c2a44"></div><div class="spine" style="--c:#4a2a4a"></div><div class="spine" style="--c:#245a5a"></div><div class="cv band" style="--c:#151515;width:7.8cqw"><b>Frankenstein</b><i>Shelley</i></div><div class="spine" style="--c:#a7562b"></div><div class="spine" style="--c:#3a4048"></div><div class="spine" style="--c:#7f8f6a"></div><div class="spine" style="--c:#6b2a2a"></div><div class="spine" style="--c:#c9952e"></div>
+            </div></div>
+        </div>
+        <span class="ann" data-n="1" style="left:2cqw;top:52cqw">filters = shelf labels</span>
+        <span class="ann" data-n="2" style="left:46cqw;top:10cqw">hover tilts a book out</span>
+        <span class="ann" data-n="3" style="left:70cqw;top:46cqw">search results are a shelf too</span>
+      </div></div>
+      <figcaption>Desktop: a classic store layout where every list is a shelf.</figcaption>
+    </figure>
+    <figure style="margin:0">
+      <div class="device phone"><div class="screen d-screen ph">
+        <div class="ph-top" style="color:#9b4a2f;background:#fff">Fiction <span style="font:3.6cqw var(--body);color:#5d5446">Filters</span></div>
+        <div style="position:absolute;left:5cqw;top:18cqw;font:600 4.6cqw var(--display)">Strange and new</div>
+        <div style="position:absolute;left:0;right:0;top:28cqw;display:flex;gap:3cqw;padding:0 5cqw 3cqw;border-bottom:4cqw solid #b98a5e;align-items:flex-end;background:linear-gradient(#f3ece1,#ebe2d3)">
+          <div class="cv band" style="--c:#2d3f5c;width:30cqw;flex:none"><b>Piranesi</b><i>Clarke</i></div><div class="spine" style="--c:#6b2a2a;width:6cqw;height:40cqw;flex:none"></div><div class="cv" style="--c:#7d5a8a;width:30cqw;flex:none"><b>Klara and the Sun</b><i>Ishiguro</i></div><div class="spine" style="--c:#3f6b55;width:6cqw;height:38cqw;flex:none"></div>
+        </div>
+        <div style="position:absolute;left:5cqw;top:86cqw;font:600 4.6cqw var(--display)">Under 250 pages</div>
+        <div style="position:absolute;left:0;right:0;top:96cqw;display:flex;gap:3cqw;padding:0 5cqw 3cqw;border-bottom:4cqw solid #b98a5e;align-items:flex-end;background:linear-gradient(#f3ece1,#ebe2d3)">
+          <div class="spine" style="--c:#c9952e;width:6cqw;height:38cqw;flex:none"></div><div class="cv" style="--c:#151515;width:30cqw;flex:none"><b>Flatland</b><i>Abbott</i></div><div class="spine" style="--c:#245a5a;width:6cqw;height:40cqw;flex:none"></div><div class="cv band" style="--c:#a7562b;width:30cqw;flex:none"><b>The Wild Robot</b><i>Brown</i></div>
+        </div>
+        <div class="ph-tabs" style="background:#fff;color:#4c463e"><span>Shop</span><span>Search</span><span>Shelf</span><span>Bag</span></div>
+      </div></div>
+      <figcaption>Phone: one shelf per row, swiped sideways; filters live in a sheet.</figcaption>
+    </figure>
+  </div>
+  <div class="notes">
+    <div class="note"><h3>Mechanics</h3><ul><li>Standard pages and URLs per section and search</li><li>Spines and face-outs mixed, so lists feel browsable</li><li>Hover tilt, then the 3D book on click</li></ul></div>
+    <div class="note"><h3>Good at</h3><ul><li>Handles a huge catalogue gracefully</li><li>Familiar, fast, easy to search and filter</li><li>Search engines can index every shelf</li></ul></div>
+    <div class="note"><h3>Watch out</h3><ul><li>Less of a "place"; charm comes from details</li><li>Spines carry less information than covers on small screens</li></ul></div>
+  </div>
+</section>
+
+<!-- =============================== shared =============================== -->
+<section class="concept" id="shared">
+  <div class="concept-head"><span class="letter">+</span><h2>Pieces every concept would share</h2>
+    <p>Whichever direction leads, these parts are the same and can be designed once.</p></div>
+  <div class="flow">
+    <div class="step"><div class="wf" style="background:#efeeea"><div class="box" style="left:12%;top:12%;width:34%;height:72%;background:#cdd6dc"></div><div class="wtext" style="left:16%;top:42%">book<br>(drag to turn)</div><div class="box" style="left:54%;top:12%;width:38%;height:72%;background:#fff;border:1px solid #ddd"></div><div class="wtext" style="left:57%;top:18%">Hamnet<br>O'Farrell · 2020<br>— note —<br>Open · Keep<br>Buy ↗</div></div>
+      <p><b>book in hand</b>The 3D pick-up, turn over, leaf-through. Classics open in 3D; recent books use Google Books previews.</p></div>
+    <div class="step"><div class="wf"><div class="talker" style="position:absolute;left:8%;top:12%;width:46%;font-size:5.4cqw">if you liked Piranesi, this is gentler</div><div class="talker" style="position:absolute;left:44%;top:52%;width:50%;font-size:5.4cqw;transform:rotate(2deg)">read it in one sitting · Margot</div></div>
+      <p><b>shelf-talkers</b>Short handwritten notes. Written by a person (or carefully drafted and approved), never generic.</p></div>
+    <div class="step"><div class="wf"><div class="box" style="left:10%;top:12%;width:36%;height:74%;background:#e8dcc6"></div><div class="wtext" style="left:52%;top:14%">Your bag<br>2 books<br>□ gift wrap<br><br>[ check out ↗ ]</div></div>
+      <p><b>bag and checkout</b>A paper bag, a receipt-style summary, then Bookshop.org (supports indie shops).</p></div>
+    <div class="step"><div class="wf"><svg viewBox="0 0 120 90" style="position:absolute;inset:10% 20%;width:60%;height:80%" aria-hidden="true"><path d="M20 80 q6-30 34-30 q30 0 34 30z" fill="#2b2622"/><circle cx="56" cy="42" r="14" fill="#2b2622"/><path d="M44 34 l4-14 8 10z M62 30 l8-10 4 14z" fill="#2b2622"/><path d="M88 74 q22-4 18-26" stroke="#2b2622" stroke-width="6" fill="none" stroke-linecap="round"/></svg></div>
+      <p><b>the shop cat</b>Moves between spots, sleeps on whatever's new. Small, optional, beloved.</p></div>
+  </div>
+</section>
+
+<!-- =============================== compare =============================== -->
+<section class="concept" id="compare">
+  <div class="concept-head"><span class="letter">=</span><h2>Side by side</h2><p>My rough read on each direction (five dots = strongest).</p></div>
+  <div class="table-wrap"><table class="compare">
+    <thead><tr><th scope="col"></th><th scope="col">A · Shop window</th><th scope="col">B · Dollhouse</th><th scope="col">C · Letters</th><th scope="col">D · Shelves as pages</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">Mom-and-pop charm</th><td class="dots">●●●<span class="off">●●</span></td><td class="dots">●●●●●</td><td class="dots">●●●●<span class="off">●</span></td><td class="dots">●●●<span class="off">●●</span></td></tr>
+      <tr><th scope="row">Feels bespoke</th><td class="dots">●●●<span class="off">●●</span></td><td class="dots">●●●●<span class="off">●</span></td><td class="dots">●●●●●</td><td class="dots">●●<span class="off">●●●</span></td></tr>
+      <tr><th scope="row">Easy to find a specific book</th><td class="dots">●●●●●</td><td class="dots">●●●<span class="off">●●</span></td><td class="dots">●●<span class="off">●●●</span></td><td class="dots">●●●●●</td></tr>
+      <tr><th scope="row">Scales to a huge catalogue</th><td class="dots">●●●●●</td><td class="dots">●●●<span class="off">●●</span></td><td class="dots">●●●●<span class="off">●</span></td><td class="dots">●●●●●</td></tr>
+      <tr><th scope="row">Phones</th><td class="dots">●●●●●</td><td class="dots">●●●●<span class="off">●</span></td><td class="dots">●●●●●</td><td class="dots">●●●●<span class="off">●</span></td></tr>
+      <tr><th scope="row">Build effort (more dots = easier)</th><td class="dots">●●●●<span class="off">●</span></td><td class="dots">●●<span class="off">●●●</span></td><td class="dots">●●●<span class="off">●●</span></td><td class="dots">●●●●<span class="off">●</span></td></tr>
+    </tbody>
+  </table></div>
+  <p style="margin:0;color:var(--muted);max-width:70ch">They combine well. One natural pairing: <b>B's dollhouse as the landing page</b>, <b>D's shelves</b> when you lean into a nook or search, and <b>C's letter</b> as an optional "ask the shop" button.</p>
+</section>
+
+<!-- =============================== questions =============================== -->
+<section class="concept" id="questions">
+  <div class="concept-head"><span class="letter">?</span><h2>Questions for you</h2><p>Answer in chat or leave comments on this page; a word or two each is plenty.</p></div>
+  <div class="qs">
+    <div class="q"><h3>Which concept should lead, and what would you borrow from the others?</h3><p>For example: "B, with D's shelves for search" or "A, but with C's letter on the front page".</p></div>
+    <div class="q"><h3>What should the shop look like?</h3><ul><li>Hand-illustrated (watercolour or gouache), like a picture book</li><li>Soft 3D, like a miniature model shop seen from a fixed angle</li><li>The current warm photo-real look, used more sparingly</li><li>A clean modern store with paper textures and handwriting</li></ul></div>
+    <div class="q"><h3>Whose voice is it?</h3><ul><li>A fictional shopkeeper with a name (and a cat)</li><li>You, as the curator: your own picks and notes</li><li>The shop itself, gently anonymous</li><li>Mostly quiet: let the covers speak</li></ul></div>
+    <div class="q"><h3>How much should the 3D book moment stay?</h3><ul><li>Central: every book can be picked up, turned over and opened</li><li>Occasional: a quick tilt-and-flip preview, not a full scene</li><li>Gone: ordinary product pages, but beautifully made</li></ul></div>
+    <div class="q"><h3>What matters most for the next version?</h3><ul><li>Phones first</li><li>A much larger selection with search</li><li>A real-feeling bag and checkout</li><li>Recommendations that feel personal</li></ul></div>
+    <div class="q"><h3>Who is it for?</h3><p>Just you and friends, a public site you'd like strangers to enjoy, or the start of a real business? This changes how much we invest in buying, accounts and the catalogue.</p></div>
+  </div>
+</section>
+
+</main>
+</body>
+</html>
