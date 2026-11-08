@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bookstore Round 2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Board chrome: neutral graphite + annotation blue. The shop itself (inside the phones) uses its
+   own palette: shop green, awning clay, warm paper. Layout: prototype + live notes, then every
+   screen as a numbered wireframe, then desktop, then open questions. */
+:root {
+  --paper: #f2f2ef; --panel: #ffffff; --ink: #1d1f22; --muted: #5b6066; --line: #d8d7d2;
+  --mark: #2f5d8a; --wire: #e8e7e3; --wire-ink: #868a90;
+  --shop: #2f4a3b; --awning: #c46a3f; --cream: #f7f2e8; --wood: #b98a5e; --wood-dark: #8a5a3b;
+  --display: "Fraunces", Georgia, serif; --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace; --hand: "Caveat", cursive;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.55 var(--body); }
+.wrap { max-width: 1240px; margin: 0 auto; padding: 36px 20px 96px; display: grid; gap: 64px; }
+h1 { font: 600 2.4rem/1.1 var(--display); margin: 0; text-wrap: balance; }
+h2 { font: 600 1.7rem/1.15 var(--display); margin: 0; text-wrap: balance; }
+.label { font: 500 0.72rem/1 var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0; }
+.lede { color: var(--muted); max-width: 70ch; margin: 0; }
+.top { display: grid; gap: 14px; }
+.decisions { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.decisions div { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 0.9rem; }
+.decisions b { display: block; font: 500 0.72rem var(--mono); color: var(--mark); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
+.howto { background: #eaf0f6; border: 1px solid #c9d7e6; border-radius: 8px; padding: 12px 14px; font-size: 0.92rem; max-width: 80ch; }
+.howto ol { margin: 6px 0 0; padding-left: 1.2em; }
+
+/* --- prototype --- */
+.proto { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 36px; align-items: start; }
+.phone { width: 360px; background: #111; border-radius: 44px; padding: 12px; box-shadow: 0 30px 60px -30px rgba(0,0,0,0.45); }
+.screen { container-type: inline-size; position: relative; aspect-ratio: 9 / 19.5; overflow: hidden; border-radius: 34px; background: var(--cream); font-family: var(--body); color: #2b2620; }
+.proto-side { display: grid; gap: 16px; }
+.stepper { display: flex; flex-wrap: wrap; gap: 6px; }
+.stepper button { font: 500 0.8rem var(--mono); border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 6px 10px; cursor: pointer; color: var(--ink); }
+.stepper button[aria-current="true"] { background: var(--mark); border-color: var(--mark); color: #fff; }
+.stepper button:focus-visible, .hot:focus-visible { outline: 3px solid #f2b84b; outline-offset: 2px; }
+.screen-notes { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+.screen-notes h3 { margin: 0 0 6px; font: 600 1.15rem var(--display); }
+.screen-notes ul { margin: 8px 0 0; padding-left: 1.1em; }
+.screen-notes li { margin: 4px 0; }
+.screen-notes .q { margin-top: 10px; font-size: 0.9rem; color: var(--muted); }
+.view { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity .35s, transform .45s; transform: scale(1.02); }
+.view.on { opacity: 1; pointer-events: auto; transform: none; }
+@media (prefers-reduced-motion: reduce) { .view, .book3d, .poke { transition: none !important; } }
+.hot { cursor: pointer; background: none; border: 0; padding: 0; font: inherit; color: inherit; text-align: inherit; }
+
+/* --- shop pieces, all in container units of the phone screen --- */
+.bar { position: absolute; inset: 0 0 auto 0; height: 13cqw; padding: 3.5cqw 4.5cqw 0; display: flex; align-items: center; justify-content: space-between; z-index: 3; }
+.logo { font: 600 4.6cqw var(--display); color: var(--shop); }
+.icon { width: 7cqw; height: 7cqw; display: grid; place-items: center; font: 600 3.4cqw var(--body); color: var(--shop); position: relative; }
+.icon svg { width: 5.6cqw; height: 5.6cqw; }
+.badge { position: absolute; right: -0.6cqw; top: -0.6cqw; background: var(--awning); color: #fff; border-radius: 50%; width: 4.2cqw; height: 4.2cqw; font-size: 2.6cqw; display: grid; place-items: center; }
+.cv { position: relative; aspect-ratio: 2 / 3; background: var(--c, #355); color: var(--f, #f5ecd8); border-radius: 0.6cqw; box-shadow: 0.6cqw 1cqw 2cqw rgba(0,0,0,0.28);
+  display: flex; flex-direction: column; justify-content: space-between; padding: 7% 9%; overflow: hidden; flex: none; }
+.cv b { font: 600 3.2cqw/1.08 var(--display); }
+.cv i { font: 2.2cqw/1.2 var(--body); font-style: normal; opacity: 0.85; }
+.cv::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5%; background: rgba(0,0,0,0.2); }
+.cv.band::before { content: ""; position: absolute; left: 0; right: 0; top: 40%; height: 24%; background: rgba(255,255,255,0.18); }
+.spine { width: 5cqw; height: 31cqw; background: var(--c); border-radius: 0.5cqw; flex: none; box-shadow: inset -0.8cqw 0 0 rgba(0,0,0,0.18), 0.5cqw 0.8cqw 1.4cqw rgba(0,0,0,0.2);
+  writing-mode: vertical-rl; font: 600 2.3cqw var(--display); color: rgba(255,248,232,0.9); padding: 2cqw 0; text-align: center; overflow: hidden; }
+.talker { font: 3.6cqw/1.12 var(--hand); color: #3a2f25; background: #fffaf0; border: 0.3cqw solid #e6dcc6; padding: 1.4cqw 2cqw; transform: rotate(-2deg); box-shadow: 0.3cqw 0.6cqw 1.2cqw rgba(0,0,0,0.12); }
+.shelf { position: relative; display: flex; gap: 1.8cqw; align-items: flex-end; padding: 0 5cqw 2.2cqw; overflow-x: auto; scrollbar-width: none;
+  background: linear-gradient(#efe6d7, #e6dac6); box-shadow: inset 0 -2cqw 3cqw rgba(80,50,20,0.12); border-bottom: 3.6cqw solid var(--wood); }
+.shelf::-webkit-scrollbar { display: none; }
+.shelf .cv { width: 22cqw; }
+.plate { display: inline-block; font: 600 2.8cqw var(--display); color: #f3dfab; background: #3b2a1f; padding: 0.8cqw 2.4cqw; border-radius: 0.6cqw; letter-spacing: 0.02em; }
+.chips { display: flex; gap: 2cqw; overflow-x: auto; scrollbar-width: none; padding: 0 5cqw; }
+.chip { flex: none; font: 3.1cqw var(--body); border: 0.3cqw solid #d6cab4; border-radius: 6cqw; padding: 1.4cqw 3.4cqw; background: #fffdf8; color: #4b4236; }
+.chip.on { background: var(--shop); color: #fff; border-color: var(--shop); }
+.btn { display: inline-flex; align-items: center; justify-content: center; font: 600 3.6cqw var(--body); border-radius: 7cqw; padding: 3.2cqw 6cqw; background: var(--shop); color: #fff; }
+.btn.ghost { background: transparent; color: var(--shop); border: 0.4cqw solid var(--shop); }
+.pay { background: #111; color: #fff; }
+.poke { transition: transform .35s cubic-bezier(.2,.8,.2,1); }
+.poke.out { transform: translateY(-7cqw); }
+.tag { position: absolute; z-index: 4; background: #fffdf8; border: 0.3cqw solid #e2d6bf; border-radius: 1.6cqw; padding: 1.6cqw 2.4cqw; box-shadow: 0 1.5cqw 3cqw rgba(0,0,0,0.18); font: 3cqw/1.25 var(--body); width: 44cqw; }
+.tag b { font: 600 3.6cqw/1.1 var(--display); display: block; }
+.tag small { color: #7a6f60; }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; background: #fffdf8; border-radius: 6cqw 6cqw 0 0; box-shadow: 0 -2cqw 5cqw rgba(0,0,0,0.18); padding: 3cqw 5cqw 6cqw; }
+.grab { width: 11cqw; height: 1.2cqw; border-radius: 1cqw; background: #d6cdbd; margin: 0 auto 3cqw; }
+.dots { display: flex; gap: 2cqw; justify-content: center; font: 2.8cqw var(--body); color: #f6efe2; }
+.dots span { padding: 1cqw 2.4cqw; border-radius: 4cqw; background: rgba(255,255,255,0.12); }
+.dots span.on { background: rgba(255,255,255,0.85); color: #2b2620; }
+.book3d { width: 54cqw; aspect-ratio: 2 / 3; position: relative; transform-style: preserve-3d; transition: transform .7s cubic-bezier(.2,.8,.2,1); }
+.book3d .face { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 0.8cqw; }
+.book3d .back { transform: rotateY(180deg); background: #6b2a2a; color: #f6e9d6; padding: 9% 9%; font: 2.9cqw/1.4 var(--body); display: flex; flex-direction: column; gap: 3cqw; }
+.book3d .back em { font: 600 4cqw/1.2 var(--display); font-style: italic; }
+.book3d .front.cv { width: 100%; box-shadow: 1.5cqw 3cqw 6cqw rgba(0,0,0,0.45); }
+.book3d .front.cv b { font-size: 6.4cqw; }
+.book3d .front.cv i { font-size: 3.6cqw; }
+.page { background: #f6f0e2; color: #2a251e; font: 2.95cqw/1.55 Georgia, serif; padding: 7cqw 6cqw; border-radius: 0.6cqw; box-shadow: 1cqw 2cqw 5cqw rgba(0,0,0,0.4); text-align: justify; hyphens: auto; }
+.page h4 { font: 3.4cqw Georgia, serif; text-align: center; margin: 0 0 4cqw; letter-spacing: 0.05em; }
+
+/* --- static screen grid --- */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 28px 22px; }
+.cell { display: grid; gap: 10px; align-content: start; }
+.cell .phone { width: 100%; padding: 8px; border-radius: 32px; }
+.cell .screen { border-radius: 25px; }
+.cell h3 { margin: 0; font: 600 1.05rem var(--body); }
+.cell h3 span { font: 500 0.75rem var(--mono); color: var(--mark); margin-right: 6px; }
+.cell p { margin: 0; font-size: 0.88rem; color: var(--muted); }
+.ann { position: absolute; z-index: 9; background: var(--mark); color: #fff; font: 500 2.7cqw/1 var(--mono); padding: 1cqw 1.8cqw; border-radius: 1cqw; white-space: nowrap; }
+
+/* --- desktop --- */
+.desk { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+.browser { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px; }
+.browser .screen { aspect-ratio: 16 / 10; border-radius: 6px; }
+.qs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.qcard { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; font-size: 0.92rem; }
+.qcard b { font: 500 0.75rem var(--mono); color: var(--mark); display: block; margin-bottom: 4px; }
+@media (max-width: 860px) { .proto { grid-template-columns: 1fr; } .phone { margin: 0 auto; } .desk { grid-template-columns: 1fr; } }
+@media (max-width: 400px) { .phone { width: 100%; } }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+<section class="top">
+  <p class="label">collinslab books · design board · round 2 · phone first</p>
+  <h1>The shop window and the shelves</h1>
+  <p class="lede">Round 2 narrows to what you chose: the illustrated shopfront as the front door, sections drawn as shelves you can lean into, and the book you pick up as the heart of it. Everything is designed for a phone first; the desktop follows at the end.</p>
+  <div class="decisions">
+    <div><b>Landing</b>Shop window (A), rethought for phones</div>
+    <div><b>Browsing</b>Shelves as pages (D) + leaning in (B)</div>
+    <div><b>Signature</b>Every book can be picked up, turned over and opened</div>
+    <div><b>Book view</b>Immersed in the book; the shop stays softly behind it</div>
+    <div><b>Buying</b>Direct with us; our checkout, our receipts</div>
+    <div><b>Kept</b>Curated and few · classics + recent · no game controls</div>
+  </div>
+  <div class="howto"><b>How we'll iterate.</b>
+    <ol>
+      <li>Tap through the phone prototype below, or open this page on your phone. It works there too.</li>
+      <li>Comment on any screen. Each one has a label (S1–S8) and numbered callouts, so "S3·2: make the tag smaller" is enough.</li>
+      <li>I revise and publish round 3 as a new page, with a short list of what changed, so earlier rounds stay comparable.</li>
+    </ol></div>
+</section>
+
+<!-- ======================= prototype ======================= -->
+<section class="proto" aria-label="Tappable phone prototype">
+  <div class="phone"><div class="screen" id="proto">
+
+    <!-- S1 storefront -->
+    <div class="view on" data-view="s1">
+      <div class="bar" style="background:var(--cream)"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></span><span class="logo">collinslab books</span>
+        <button class="hot icon" data-go="s6" aria-label="Your bag, 1 book"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8h12l-1 12H7z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg><span class="badge">1</span></button></div>
+      <svg viewBox="0 0 360 250" style="position:absolute;left:0;top:13cqw;width:100cqw" aria-hidden="true">
+        <rect x="0" y="0" width="360" height="250" fill="#2f4a3b"/>
+        <path d="M0 0 h360 v40 l-10 26 h-340 l-10-26z" fill="#c46a3f"/>
+        <path d="M30 0 h30 v40 l-6 26 h-30 l6-26z M100 0 h30 v40 l-6 26 h-30 l6-26z M170 0 h30 v40 l-6 26 h-30 l6-26z M240 0 h30 v40 l-6 26 h-30 l6-26z M310 0 h30 v40 l-6 26 h-30 l6-26z" fill="#f2e6cc"/>
+        <rect x="18" y="82" width="324" height="156" rx="6" fill="#fbe9c4"/>
+        <rect x="18" y="82" width="324" height="156" rx="6" fill="url(#g1)"/>
+        <rect x="30" y="206" width="300" height="12" fill="#8a5a3b"/>
+        <path d="M282 206 q4-18 18-18 q14 0 16 18z" fill="#2b2622"/><circle cx="298" cy="184" r="8" fill="#2b2622"/><path d="M291 178 l2-8 4 6z M301 176 l4-6 2 8z" fill="#2b2622"/>
+        <rect x="240" y="96" width="88" height="34" rx="4" fill="#1f2a24"/><text x="284" y="110" text-anchor="middle" font-family="Caveat, cursive" font-size="13" fill="#f3ead6">in the window:</text><text x="284" y="124" text-anchor="middle" font-family="Caveat, cursive" font-size="13" fill="#f3ead6">strange &amp; quiet</text>
+        <defs><radialGradient id="g1" cx="45%" cy="35%" r="70%"><stop offset="0" stop-color="#fff7de" stop-opacity="0.75"/><stop offset="1" stop-color="#fbe9c4" stop-opacity="0"/></radialGradient></defs>
+      </svg>
+      <div style="position:absolute;left:9cqw;top:36cqw;display:flex;gap:3cqw;align-items:flex-end">
+        <button class="hot" data-go="s3" aria-label="Pick up Piranesi from the window"><div class="cv band" style="--c:#2d3f5c;width:15cqw"><b>Piranesi</b><i>Clarke</i></div></button>
+        <div class="cv" style="--c:#6b2a2a;width:14cqw"><b>Hamnet</b><i>O'Farrell</i></div>
+        <div class="cv" style="--c:#151515;width:13cqw"><b>Lincoln in the Bardo</b><i>Saunders</i></div>
+      </div>
+      <div style="position:absolute;left:5cqw;right:5cqw;top:86cqw;height:11cqw;border:0.3cqw solid #ddd3bf;border-radius:6cqw;background:#fff;display:flex;align-items:center;padding:0 4cqw;font:3.4cqw var(--body);color:#8a7f6c">Search books, authors, a feeling…</div>
+      <div style="position:absolute;left:5cqw;top:103cqw;font:600 4.4cqw var(--display)">Step inside</div>
+      <div style="position:absolute;left:0;right:0;top:110cqw;display:flex;gap:3cqw;overflow-x:auto;padding:0 5cqw;scrollbar-width:none">
+        <button class="hot" data-go="s2" style="flex:none;width:30cqw;height:34cqw;border-radius:2cqw;background:#3b2a1f;position:relative;overflow:hidden" aria-label="Step into Fiction">
+          <span style="position:absolute;left:3cqw;right:3cqw;top:5cqw;display:flex;gap:1cqw;align-items:flex-end;border-bottom:1.6cqw solid var(--wood);height:13cqw"><i style="width:3cqw;height:10cqw;background:#b6453a"></i><i style="width:3cqw;height:12cqw;background:#e3c25a"></i><i style="width:4cqw;height:11cqw;background:#3f6b55"></i><i style="width:3cqw;height:9cqw;background:#2d3f5c"></i></span>
+          <span style="position:absolute;left:3cqw;bottom:3cqw;font:600 3.8cqw var(--display);color:#f3dfab">Fiction</span></button>
+        <div style="flex:none;width:30cqw;height:34cqw;border-radius:2cqw;background:#2d3a33;position:relative"><span style="position:absolute;left:3cqw;bottom:3cqw;font:600 3.8cqw var(--display);color:#f3dfab">Mystery</span></div>
+        <div style="flex:none;width:30cqw;height:34cqw;border-radius:2cqw;background:#33303d;position:relative"><span style="position:absolute;left:3cqw;bottom:3cqw;font:600 3.8cqw var(--display);color:#f3dfab">Science</span></div>
+        <div style="flex:none;width:30cqw;height:34cqw;border-radius:2cqw;background:#3d3328;position:relative"><span style="position:absolute;left:3cqw;bottom:3cqw;font:600 3.8cqw var(--display);color:#f3dfab">Poetry</span></div>
+      </div>
+      <div style="position:absolute;left:5cqw;top:150cqw;font:600 4.4cqw var(--display)">Chosen for you</div>
+      <div class="shelf" style="position:absolute;left:0;right:0;top:157cqw;height:44cqw;padding-top:3cqw">
+        <div class="cv" style="--c:#c9952e;--f:#1d1a16"><b>Walden</b><i>Thoreau</i></div><div class="spine" style="--c:#3f6b55">Braiding Sweetgrass</div><div class="cv band" style="--c:#a7562b"><b>The Wild Robot</b><i>Brown</i></div><div class="spine" style="--c:#151515">Frankenstein</div>
+      </div>
+    </div>
+
+    <!-- S2 section shelves -->
+    <div class="view" data-view="s2">
+      <div class="bar" style="background:var(--cream)"><button class="hot icon" data-go="s1" aria-label="Back to the shop window"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></button><span class="logo" style="font-size:5.2cqw">Fiction</span><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M7 12h10M10 18h4"/></svg></span></div>
+      <div class="chips" style="position:absolute;left:0;right:0;top:15cqw"><span class="chip on">Everything</span><span class="chip">Strange</span><span class="chip">Comforting</span><span class="chip">New</span><span class="chip">Classics</span><span class="chip">Short</span></div>
+      <div style="position:absolute;left:5cqw;top:28cqw"><span class="plate">Strange and new</span></div>
+      <div class="shelf" id="shelf1" style="position:absolute;left:0;right:0;top:36cqw;height:46cqw;padding-top:6cqw">
+        <div class="cv band" style="--c:#2d3f5c"><b>Piranesi</b><i>Clarke</i></div>
+        <button class="hot poke" id="pokeBook" data-poke aria-label="Lincoln in the Bardo: tap to pull it out"><div class="spine" style="--c:#151515;height:34cqw">Lincoln in the Bardo</div></button>
+        <div class="spine" style="--c:#6b2a2a">Hamnet</div>
+        <div class="talker" style="flex:none;width:24cqw;align-self:center">ghosts, but funny</div>
+        <div class="cv" style="--c:#7d5a8a"><b>Klara and the Sun</b><i>Ishiguro</i></div>
+      </div>
+      <button class="hot tag" id="pokeTag" data-go="s3" style="left:22cqw;top:20cqw;display:none"><b>Lincoln in the Bardo</b>George Saunders · 2017<br><small>$24 · tap again to pick it up</small></button>
+      <div style="position:absolute;left:5cqw;top:88cqw"><span class="plate">Comfort reads</span></div>
+      <div class="shelf" style="position:absolute;left:0;right:0;top:96cqw;height:44cqw;padding-top:4cqw">
+        <div class="spine" style="--c:#c9952e">Anne of Green Gables</div><div class="cv" style="--c:#3f6b55"><b>A Gentleman in Moscow</b><i>Towles</i></div><div class="spine" style="--c:#2d3f5c">The House in the Cerulean Sea</div><div class="cv band" style="--c:#a7562b"><b>Hamnet</b><i>O'Farrell</i></div>
+      </div>
+      <div style="position:absolute;left:5cqw;top:146cqw"><span class="plate">On the back table: classics</span></div>
+      <div class="shelf" style="position:absolute;left:0;right:0;top:154cqw;height:44cqw;padding-top:4cqw">
+        <div class="spine" style="--c:#1f3b2d">Middlemarch</div><div class="spine" style="--c:#6b1e1e">Jane Eyre</div><div class="cv" style="--c:#151515"><b>Frankenstein</b><i>Shelley</i></div><div class="spine" style="--c:#1c2a44">Moby-Dick</div><div class="spine" style="--c:#4a2a4a">Dracula</div>
+      </div>
+    </div>
+
+    <!-- S3 book in hand: front / back -->
+    <div class="view" data-view="s3" style="background:#2a221c">
+      <div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,#4a3a2c 0 5cqw,#3a2d22 5cqw 6cqw,#6b4a33 6cqw 12cqw,#3a2d22 12cqw 13cqw);filter:blur(3px);opacity:0.55"></div>
+      <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 38%, rgba(255,226,170,0.28), rgba(20,14,10,0.75) 70%)"></div>
+      <button class="hot" data-go="s2" style="position:absolute;left:4cqw;top:5cqw;font:3.2cqw var(--body);color:#f3e8d6;display:flex;gap:1.5cqw;align-items:center" aria-label="Put it back on the shelf"><span style="font-size:4cqw">↓</span> Put it back</button>
+      <span style="position:absolute;right:5cqw;top:5cqw;font:3.2cqw var(--body);color:#cdbfa8">Fiction · shelf 1</span>
+      <button class="hot" id="flip" style="position:absolute;left:23cqw;top:16cqw;perspective:200cqw" aria-label="Turn the book over">
+        <div class="book3d" id="book3d">
+          <div class="face front cv band" style="--c:#151515"><b>Lincoln in the Bardo</b><i>George Saunders</i></div>
+          <div class="face back"><em>A father, a son, and a graveyard full of restless voices.</em><span>Washington, 1862. Willie Lincoln has died, and the ghosts who share his cemetery cannot agree on what happens next. Funny, strange and devastating.</span><span style="opacity:0.7">Booker Prize 2017 · 368 pages</span></div>
+        </div></button>
+      <div class="dots" style="position:absolute;left:0;right:0;top:100cqw"><span class="on" id="dotF">Front</span><span id="dotB">Back</span><button class="hot" data-go="s4" style="padding:1cqw 2.4cqw;border-radius:4cqw;background:rgba(255,255,255,0.12)">Look inside</button></div>
+      <div class="talker" style="position:absolute;left:58cqw;top:84cqw;width:34cqw;transform:rotate(4deg)">ghosts, but funny. Trust me. · M.</div>
+      <div class="sheet" style="top:122cqw">
+        <div class="grab"></div>
+        <div style="font:600 5.4cqw/1.1 var(--display)">Lincoln in the Bardo</div>
+        <div style="font:3.4cqw var(--body);color:#6b6152;margin:1cqw 0 3cqw">George Saunders · Paperback · ships in 3–5 days</div>
+        <div style="display:flex;align-items:center;justify-content:space-between"><span style="font:600 5.4cqw var(--body)">$24.00</span><button class="hot btn" data-go="s6">Add to bag</button></div>
+        <div style="font:3cqw var(--body);color:#8a7f6c;margin-top:4cqw">Swipe up for the edition, reviews and shipping</div>
+      </div>
+    </div>
+
+    <!-- S4 inside the book -->
+    <div class="view" data-view="s4" style="background:#2a221c">
+      <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%, rgba(255,226,170,0.22), rgba(20,14,10,0.85) 70%)"></div>
+      <button class="hot" data-go="s3" style="position:absolute;left:4cqw;top:5cqw;font:3.2cqw var(--body);color:#f3e8d6">‹ Close the book</button>
+      <span style="position:absolute;right:5cqw;top:5cqw;font:3.2cqw var(--body);color:#cdbfa8">p. 1 of 12</span>
+      <div class="page" style="position:absolute;left:8cqw;right:8cqw;top:15cqw;height:118cqw">
+        <h4>I.</h4>
+        <div style="display:grid;gap:2.6cqw"><span style="display:block;height:1.6cqw;background:#d9cfbd;border-radius:1cqw;width:92%"></span><span style="display:block;height:1.6cqw;background:#d9cfbd;border-radius:1cqw;width:100%"></span><span style="display:block;height:1.6cqw;background:#d9cfbd;border-radius:1cqw;width:96%"></span><span style="display:block;height:1.6cqw;background:#d9cfbd;border-radius:1cqw;width:100%"></span><span style="display:block;height:1.6cqw;background:#d9cfbd;border-radius:1cqw;width:88%"></span><span style="display:block;height:1.6cqw;background:#d9cfbd;border-radius:1cqw;width:100%"></span><span style="display:block;height:1.6cqw;background:#d9cfbd;border-radius:1cqw;width:94%"></span><span style="display:block;height:1.6cqw;background:#d9cfbd;border-radius:1cqw;width:72%"></span><span style="display:block;height:1.6cqw;background:#d9cfbd;border-radius:1cqw;width:0%"></span><span style="display:block;height:1.6cqw;background:#d9cfbd;border-radius:1cqw;width:100%"></span><span style="display:block;height:1.6cqw;background:#d9cfbd;border-radius:1cqw;width:97%"></span><span style="display:block;height:1.6cqw;background:#d9cfbd;border-radius:1cqw;width:100%"></span><span style="display:block;height:1.6cqw;background:#d9cfbd;border-radius:1cqw;width:90%"></span><span style="display:block;height:1.6cqw;background:#d9cfbd;border-radius:1cqw;width:100%"></span><span style="display:block;height:1.6cqw;background:#d9cfbd;border-radius:1cqw;width:64%"></span></div>
+        <p style="margin:5cqw 0 0;color:#6b6152;font-style:italic;text-align:center;font-size:2.8cqw">first page of the publisher's preview</p>
+        <div style="position:absolute;right:0;bottom:0;width:16cqw;height:16cqw;background:linear-gradient(135deg, transparent 50%, #e2d8c4 50%);border-radius:0 0 0.6cqw 0"></div>
+      </div>
+      <div style="position:absolute;left:0;right:0;top:138cqw;text-align:center;font:3.2cqw var(--body);color:#cdbfa8">swipe to turn the page · pinch to read closer</div>
+      <div style="position:absolute;left:5cqw;right:5cqw;top:150cqw;display:flex;gap:3cqw"><button class="hot btn ghost" data-go="s3" style="flex:1;color:#f3e8d6;border-color:#cdbfa8">Back to the cover</button><button class="hot btn" data-go="s6" style="flex:1;background:var(--awning)">Add to bag · $24</button></div>
+    </div>
+
+    <!-- S6 bag -->
+    <div class="view" data-view="s6">
+      <div class="bar" style="background:var(--cream)"><button class="hot icon" data-go="s2" aria-label="Keep browsing"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg></button><span class="logo" style="font-size:5.2cqw">Your bag</span><span class="icon"></span></div>
+      <svg viewBox="0 0 200 120" style="position:absolute;left:30cqw;top:15cqw;width:40cqw" aria-hidden="true"><path d="M30 30 h140 l-12 86 h-116z" fill="#d9c3a0"/><path d="M70 30 q30-40 60 0" stroke="#8a6a44" stroke-width="5" fill="none"/><text x="100" y="80" text-anchor="middle" font-family="Fraunces, serif" font-size="14" fill="#5a4024">collinslab books</text></svg>
+      <div style="position:absolute;left:5cqw;right:5cqw;top:44cqw;display:grid;gap:4cqw">
+        <div style="display:flex;gap:4cqw;align-items:center"><div class="cv band" style="--c:#151515;width:16cqw"><b>&nbsp;</b><i>&nbsp;</i></div><div style="flex:1;font:3.4cqw/1.35 var(--body)"><b style="font:600 4cqw var(--display)">Lincoln in the Bardo</b><br>George Saunders · Paperback<br><span style="color:#8a7f6c">Qty 1</span></div><b style="font:600 4cqw var(--body)">$24.00</b></div>
+        <div style="display:flex;gap:4cqw;align-items:center"><div class="cv" style="--c:#c9952e;width:16cqw"><b>&nbsp;</b><i>&nbsp;</i></div><div style="flex:1;font:3.4cqw/1.35 var(--body)"><b style="font:600 4cqw var(--display)">Walden</b><br>Collinslab Classics edition<br><span style="color:#8a7f6c">Qty 1</span></div><b style="font:600 4cqw var(--body)">$16.00</b></div>
+        <label style="display:flex;justify-content:space-between;align-items:center;font:3.4cqw var(--body);border-top:0.3cqw solid #e2d8c4;padding-top:3cqw"><span>Gift wrap in brown paper + a note</span><span style="width:10cqw;height:6cqw;border-radius:3cqw;background:var(--shop);display:inline-block"></span></label>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:1.5cqw;font:3.4cqw var(--body);border-top:0.3cqw solid #e2d8c4;padding-top:3cqw"><span>Subtotal</span><span>$40.00</span><span>Shipping</span><span style="color:var(--shop)">Free over $40</span><b>Total</b><b>$40.00</b></div>
+      </div>
+      <div style="position:absolute;left:5cqw;right:5cqw;top:150cqw;display:grid;gap:3cqw"><button class="hot btn pay" data-go="s7">Apple Pay / Google Pay</button><button class="hot btn" data-go="s7">Check out</button></div>
+    </div>
+
+    <!-- S7 confirmation -->
+    <div class="view" data-view="s7">
+      <div class="bar" style="background:var(--cream)"><span class="icon"></span><span class="logo">collinslab books</span><span class="icon"></span></div>
+      <div style="position:absolute;left:8cqw;right:8cqw;top:22cqw;background:#fffdf8;border:0.3cqw dashed #d6cab4;padding:6cqw;font:3.4cqw/1.5 var(--mono);color:#3a2f25">
+        <div style="font:600 5.4cqw/1.2 var(--display);margin-bottom:3cqw">Thank you, John.</div>
+        <div style="font:3.6cqw/1.45 var(--body)">We're wrapping your books now. You'll get an email from us when they ship.</div>
+        <div style="border-top:0.3cqw dashed #d6cab4;margin:4cqw 0;padding-top:3cqw">Order CL-10482<br>Lincoln in the Bardo ..... 24.00<br>Walden ................... 16.00<br>Gift wrap ................. 0.00<br>Total ................... $40.00</div>
+        <div style="font:3.8cqw var(--hand);color:#2f4a3b">Happy reading! · M. &amp; Biscuit</div>
+      </div>
+      <button class="hot btn ghost" data-go="s1" style="position:absolute;left:20cqw;right:20cqw;top:148cqw">Back to the shop</button>
+    </div>
+  </div></div>
+
+  <div class="proto-side">
+    <div class="stepper" role="tablist" aria-label="Prototype screens">
+      <button data-go="s1" aria-current="true">S1 Window</button><button data-go="s2">S2 Shelves</button><button data-go="s3">S3 Book</button><button data-go="s4">S4 Inside</button><button data-go="s6">S6 Bag</button><button data-go="s7">S7 Thanks</button>
+    </div>
+    <div class="screen-notes" id="notes" aria-live="polite"></div>
+    <p class="lede" style="font-size:0.9rem">Try it: tap Piranesi in the window, a section card, the black spine on the first shelf (once to pull it out, again to pick it up), the book to turn it over, then Look inside and Add to bag.</p>
+  </div>
+</section>
+
+<!-- ======================= every screen ======================= -->
+<section style="display:grid;gap:18px">
+  <p class="label">Every screen, for comments</p>
+  <h2>S1–S8 at a glance</h2>
+  <div class="grid" id="grid"></div>
+</section>
+
+<!-- ======================= desktop ======================= -->
+<section style="display:grid;gap:18px">
+  <p class="label">Desktop follows</p>
+  <h2>The same shop on a laptop</h2>
+  <p class="lede">The phone layout widens rather than changing: the window becomes a full-width shopfront, shelves get longer, and the book view keeps the shop softly behind it with details in a side panel instead of a bottom sheet.</p>
+  <div class="desk">
+    <div class="browser"><div class="screen" style="background:var(--cream)">
+      <div style="position:absolute;inset:0 0 auto 0;height:6cqw;display:flex;align-items:center;gap:2cqw;padding:0 3cqw;border-bottom:0.15cqw solid #e5dccb;background:#fffdf7"><span style="font:600 1.9cqw var(--display);color:var(--shop)">collinslab books</span><span style="flex:1;height:3cqw;border:0.15cqw solid #ddd3bf;border-radius:2cqw;background:#fff"></span><span style="font:1.2cqw var(--body)">Fiction · Mystery · Science · Poetry · Kids · History</span><span style="font:1.2cqw var(--body);background:var(--shop);color:#fff;border-radius:2cqw;padding:0.6cqw 1.4cqw">Bag · 1</span></div>
+      <svg viewBox="0 0 1000 300" style="position:absolute;left:0;top:6cqw;width:100cqw" aria-hidden="true"><rect width="1000" height="300" fill="#2f4a3b"/><path d="M0 0 h1000 v40 l-14 30 h-972 l-14-30z" fill="#c46a3f"/><rect x="40" y="90" width="620" height="190" rx="6" fill="#fbe9c4"/><rect x="60" y="250" width="580" height="14" fill="#8a5a3b"/><rect x="700" y="90" width="260" height="190" rx="6" fill="#24392d"/><text x="830" y="160" text-anchor="middle" font-family="Fraunces, serif" font-size="30" fill="#f3e8d6">In the window:</text><text x="830" y="200" text-anchor="middle" font-family="Fraunces, serif" font-size="30" fill="#f3e8d6">strange &amp; quiet</text></svg>
+      <div style="position:absolute;left:8cqw;top:14cqw;display:flex;gap:2.4cqw;align-items:flex-end"><div class="cv band" style="--c:#2d3f5c;width:7cqw"><b style="font-size:1.1cqw">Piranesi</b><i style="font-size:0.8cqw">Clarke</i></div><div class="cv" style="--c:#6b2a2a;width:6.6cqw"><b style="font-size:1.1cqw">Hamnet</b><i style="font-size:0.8cqw">&nbsp;</i></div><div class="cv" style="--c:#151515;width:6.2cqw"><b style="font-size:1.1cqw">Lincoln in the Bardo</b><i style="font-size:0.8cqw">&nbsp;</i></div><div class="cv band" style="--c:#7d5a8a;width:6.6cqw"><b style="font-size:1.1cqw">Klara and the Sun</b><i style="font-size:0.8cqw">&nbsp;</i></div></div>
+      <div style="position:absolute;left:3cqw;top:40cqw;font:600 1.8cqw var(--display)">Chosen for you</div>
+      <div class="shelf" style="position:absolute;left:3cqw;right:3cqw;top:44cqw;height:15cqw;gap:1cqw;padding:1cqw 2cqw 0.8cqw;border-bottom-width:1.2cqw"><div class="cv" style="--c:#c9952e;width:7cqw"><b style="font-size:1cqw">&nbsp;</b><i>&nbsp;</i></div><div class="spine" style="--c:#3f6b55;width:1.8cqw;height:11cqw"></div><div class="cv band" style="--c:#a7562b;width:7cqw"><b>&nbsp;</b><i>&nbsp;</i></div><div class="spine" style="--c:#151515;width:1.8cqw;height:11.5cqw"></div><div class="spine" style="--c:#6b2a2a;width:1.8cqw;height:10.5cqw"></div><div class="cv" style="--c:#3f6b55;width:7cqw"><b>&nbsp;</b><i>&nbsp;</i></div><div class="spine" style="--c:#2d3f5c;width:1.8cqw;height:11cqw"></div><div class="cv band" style="--c:#7d5a8a;width:7cqw"><b>&nbsp;</b><i>&nbsp;</i></div></div>
+    </div><p class="lede" style="font-size:0.88rem;margin-top:8px">D1 · Storefront: the window is the hero; section names sit in the top bar.</p></div>
+    <div class="browser"><div class="screen" style="background:#2a221c">
+      <div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,#4a3a2c 0 2.4cqw,#3a2d22 2.4cqw 2.8cqw,#6b4a33 2.8cqw 5.6cqw,#3a2d22 5.6cqw 6cqw);filter:blur(4px);opacity:0.5"></div>
+      <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 35% 45%, rgba(255,226,170,0.25), rgba(20,14,10,0.78) 65%)"></div>
+      <div class="cv band" style="--c:#151515;position:absolute;left:18cqw;top:7cqw;width:28cqw;box-shadow:1cqw 2cqw 4cqw rgba(0,0,0,0.5)"><b style="font-size:3cqw">Lincoln in the Bardo</b><i style="font-size:1.4cqw">George Saunders</i></div>
+      <div style="position:absolute;right:4cqw;top:8cqw;width:34cqw;background:#fffdf8;border-radius:1cqw;padding:2.4cqw;font:1.3cqw/1.5 var(--body)"><div style="font:600 2.4cqw/1.1 var(--display)">Lincoln in the Bardo</div><div style="color:#6b6152;margin:0.6cqw 0 1.4cqw">George Saunders · 2017 · 368 pages</div><div>A father, a son, and a graveyard full of restless voices.</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:2cqw"><b style="font-size:2cqw">$24.00</b><span style="background:var(--shop);color:#fff;border-radius:2cqw;padding:0.8cqw 1.8cqw">Add to bag</span></div><div style="margin-top:1.6cqw;color:#8a7f6c">Look inside · Turn it over · Put it back</div></div>
+    </div><p class="lede" style="font-size:0.88rem;margin-top:8px">D2 · Book in hand: the shelf blurs behind; details in a side card.</p></div>
+  </div>
+</section>
+
+<!-- ======================= questions ======================= -->
+<section style="display:grid;gap:18px">
+  <p class="label">Open questions for round 3</p>
+  <h2>Things I'd like your eye on</h2>
+  <div class="qs">
+    <div class="qcard"><b>S1 · window</b>Should the window books be tappable straight into the book view (as now), or open a "this week's window" shelf first?</div>
+    <div class="qcard"><b>S1 · sections</b>Section "doors" as small illustrated shelf cards (as drawn), or simple named tiles?</div>
+    <div class="qcard"><b>S2 · poke</b>One tap pulls a book out with a tag, a second tap picks it up. Natural, or should one tap go straight to the book?</div>
+    <div class="qcard"><b>S3 · book view</b>How much shop should show behind the book: a blurred shelf (as drawn), the actual gap where it sat, or plain darkness?</div>
+    <div class="qcard"><b>S3 · details</b>Price and Add to bag in a bottom sheet (as drawn), or only after you've turned the book over?</div>
+    <div class="qcard"><b>Voice</b>The notes are signed "M." (a shopkeeper) in these drawings as a placeholder. Keep a named shopkeeper, or use your own voice?</div>
+  </div>
+</section>
+</main>
+
+<script>
+// Prototype: switch views, poke a book out, flip the book, and keep the notes in sync.
+const NOTES = {
+  s1: ['S1 · The shop window', 'The front door. The illustrated shopfront holds this week\'s window display, and the books in it are real and tappable.', ['Window books open straight into the book view', '"Step inside" cards are the sections, drawn as little shelves', 'Search sits just below the window, always one tap away', '"Chosen for you" is a real shelf, so the browsing feel starts here'], 'Phone-first: the window is a banner, not a full screen, so the store is visible without scrolling.'],
+  s2: ['S2 · A section, as shelves', 'Each section is a stack of named shelves you swipe sideways. Moods filter which shelves you see.', ['Tap a spine once: it slides up and a tag shows title, author and price', 'Tap again (or the tag) to pick it up', 'Shelf-talkers sit between books, handwritten', 'Face-out covers mixed with spines so every shelf has a focal point'], 'Try tapping the black spine on the first shelf.'],
+  s3: ['S3 · The book in your hands', 'The shop dims and blurs behind the book: you are still in the shop, but your attention is on the book.', ['Tap or swipe the book to turn it over; the dots show which side you are seeing', '"Look inside" opens it', 'Price and Add to bag live in a bottom sheet that never covers the book', 'Put it back slides the book into the gap it came from'], 'Swipe the sheet up for edition, page count, shipping estimate.'],
+  s4: ['S4 · Inside the book', 'One page at a time on a phone (a two-page spread when the phone is turned sideways), with a page curl.', ['Swipe to turn pages; pinch to read closer', 'Classics: our full opening pages. Recent books: the publisher\'s preview pages', 'Add to bag is reachable without closing the book'], 'Placeholder text shown; the real store uses each book\'s actual opening.'],
+  s6: ['S6 · Your bag', 'A paper bag, not a cart. Gift wrapping and a note are a single toggle.', ['Free-shipping threshold visible before checkout', 'Express pay (Apple Pay / Google Pay) first; card checkout below', 'Everything branded as collinslab books'], 'Checkout is ours: we take the payment and send every email.'],
+  s7: ['S7 · Thank you', 'A receipt-style confirmation in the shop\'s voice.', ['Order number and items, like a till receipt', 'Shipping and tracking emails come from us', 'The supplier who actually ships the book is never mentioned'], ''],
+};
+const proto = document.getElementById('proto');
+const notes = document.getElementById('notes');
+const tag = document.getElementById('pokeTag'), poke = document.getElementById('pokeBook');
+function show(id) {
+  proto.querySelectorAll('.view').forEach((v) => v.classList.toggle('on', v.dataset.view === id));
+  document.querySelectorAll('.stepper button').forEach((b) => b.setAttribute('aria-current', String(b.dataset.go === id)));
+  const [t, lede, items, q] = NOTES[id];
+  notes.innerHTML = '';
+  const h = document.createElement('h3'); h.textContent = t;
+  const p = document.createElement('p'); p.style.margin = '0'; p.textContent = lede;
+  const ul = document.createElement('ul'); items.forEach((x) => { const li = document.createElement('li'); li.textContent = x; ul.append(li); });
+  notes.append(h, p, ul);
+  if (q) { const qq = document.createElement('p'); qq.className = 'q'; qq.textContent = q; notes.append(qq); }
+  if (id !== 's2') { tag.style.display = 'none'; poke.classList.remove('out'); }
+  if (id !== 's3') setFlip(false);
+}
+document.querySelectorAll('[data-go]').forEach((el) => el.addEventListener('click', () => show(el.dataset.go)));
+poke.addEventListener('click', () => {
+  if (poke.classList.contains('out')) { show('s3'); return; }
+  poke.classList.add('out'); tag.style.display = 'block';
+});
+let flipped = false;
+function setFlip(v) { flipped = v; document.getElementById('book3d').style.transform = v ? 'rotateY(180deg)' : 'none'; document.getElementById('dotF').classList.toggle('on', !v); document.getElementById('dotB').classList.toggle('on', v); }
+document.getElementById('flip').addEventListener('click', () => setFlip(!flipped));
+show('s1');
+
+// Static grid: a copy of each screen (non-interactive) with numbered callouts.
+const CALLOUTS = {
+  s1: [['1 window books → book', 8, 31], ['2 search', 6, 82], ['3 section doors', 6, 106], ['4 a real shelf', 6, 146]],
+  s2: [['1 mood chips', 6, 12], ['2 named shelf', 40, 27], ['3 tap: book pokes out', 30, 84], ['4 talker', 62, 60]],
+  s3: [['1 shop blurred behind', 4, 12], ['2 tap to turn over', 50, 20], ['3 sides + Look inside', 22, 108], ['4 sheet: price, Add to bag', 20, 118]],
+  s4: [['1 one page at a time', 30, 10], ['2 page curl', 52, 128], ['3 buy without closing', 40, 146]],
+  s6: [['1 paper bag', 4, 40], ['2 gift wrap toggle', 4, 98], ['3 express pay first', 30, 146]],
+  s7: [['1 receipt, our voice', 10, 16], ['2 emails from us', 20, 140]],
+};
+const TITLES = { s1: ['S1', 'The shop window', 'Landing on a phone.'], s2: ['S2', 'Section shelves', 'Swipe shelves sideways; tap to pull a book out.'], s3: ['S3', 'Book in hand', 'Turn it over; the shop softly behind.'], s4: ['S4', 'Inside the book', 'Page by page, with a curl.'], s6: ['S6', 'Your bag', 'Paper bag, gift wrap, express pay.'], s7: ['S7', 'Thank you', 'Receipt-style confirmation.'] };
+const grid = document.getElementById('grid');
+for (const id of Object.keys(TITLES)) {
+  const src = proto.querySelector(`.view[data-view="${id}"]`);
+  const cell = document.createElement('div'); cell.className = 'cell';
+  const phone = document.createElement('div'); phone.className = 'phone';
+  const screen = document.createElement('div'); screen.className = 'screen'; screen.setAttribute('aria-hidden', 'true');
+  const v = src.cloneNode(true); v.classList.add('on'); v.style.pointerEvents = 'none';
+  v.querySelectorAll('[id]').forEach((n) => n.removeAttribute('id'));
+  v.querySelectorAll('button').forEach((b) => { b.tabIndex = -1; });
+  screen.append(v);
+  for (const [text, x, y] of CALLOUTS[id]) { const a = document.createElement('span'); a.className = 'ann'; a.textContent = text; a.style.left = x + 'cqw'; a.style.top = y + 'cqw'; screen.append(a); }
+  phone.append(screen);
+  const [code, name, desc] = TITLES[id];
+  const h = document.createElement('h3'); h.innerHTML = `<span>${code}</span>`; h.append(name);
+  const p = document.createElement('p'); p.textContent = desc;
+  cell.append(phone, h, p); grid.append(cell);
+}
+// S5 and S8 are planned but not drawn yet: say so rather than leave a gap
+for (const [code, name, desc] of [['S5', 'Search results', 'Planned: results drawn as a shelf, with a "nothing quite right? ask the shop" note.'], ['S8', 'Order emails', 'Planned: shipped and delivered emails in the shop\'s voice.']]) {
+  const cell = document.createElement('div'); cell.className = 'cell';
+  const box = document.createElement('div'); box.style.cssText = 'aspect-ratio:9/19.5;border:1px dashed #b9b8b2;border-radius:32px;display:grid;place-items:center;color:#868a90;font:0.85rem var(--mono);background:#fff';
+  box.textContent = 'round 3';
+  const h = document.createElement('h3'); h.innerHTML = `<span>${code}</span>`; h.append(name);
+  const p = document.createElement('p'); p.textContent = desc;
+  cell.append(box, h, p); grid.append(cell);
+}
+</script>
+</body>
+</html>
