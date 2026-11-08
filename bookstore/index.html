@@ -4,54 +4,58 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>collinslab books</title>
-  <meta name="robots" content="noindex" />
+  <meta name="description" content="A small bookstore you can walk into: browse a few chosen shelves, take a book down, and leaf through it." />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="/src/bookstore/bookstore.css" />
 </head>
 <body>
-  <canvas id="view" aria-label="A first-person bookstore"></canvas>
+  <canvas id="view" aria-label="A small bookstore, seen through your eyes"></canvas>
 
   <div id="loading" class="screen">
     <div class="card">
       <p class="eyebrow">collinslab books</p>
       <h1>Unlocking the door…</h1>
       <div class="track"><div id="bar"></div></div>
-      <p id="loading-msg" class="muted">Brewing coffee, dusting shelves.</p>
+      <p id="loading-msg" class="muted">Brewing coffee, dusting the shelves.</p>
     </div>
   </div>
 
-  <div id="intro" class="screen" hidden>
-    <div class="card">
+  <div id="welcome" class="screen soft" hidden>
+    <div class="card welcome">
       <p class="eyebrow">collinslab books</p>
-      <h1>Come in, take your time.</h1>
-      <p>Wander the shelves with your coffee. Take any book down, turn it over, open it and leaf through the first pages. Put it back, or keep it for later.</p>
-      <ul class="keys">
-        <li><b>W A S D</b> walk · <b>Shift</b> faster · <b>mouse</b> look</li>
-        <li><b>Click</b> a book to take it off the shelf</li>
-        <li><b>Space</b> open · <b>← →</b> turn pages · <b>H</b> keep · <b>R</b> put back</li>
-      </ul>
-      <button id="enter" class="primary">Step inside</button>
-      <p class="muted small">Best with a mouse and keyboard. Sound on for the full effect.</p>
-    </div>
-  </div>
-
-  <div id="pause" class="screen" hidden>
-    <div class="card">
-      <p class="eyebrow">Paused</p>
-      <h2>Your pile</h2>
-      <p id="held-empty" class="muted">Nothing kept yet. Press <b>H</b> while holding a book to keep it.</p>
-      <ul id="held-list"></ul>
-      <button id="resume" class="primary">Back to the shelves</button>
-      <p class="muted small"><a href="/">collinslab.dev</a></p>
+      <h1 id="welcome-title">Good to see you.</h1>
+      <p>What would you like to browse today? We’ll set out a few shelves for you.</p>
+      <div id="welcome-sections" class="chips"></div>
+      <p class="muted small" id="welcome-count">Choose up to three</p>
+      <details class="moods"><summary>Anything else?</summary><div id="welcome-moods" class="chips"></div></details>
+      <div class="row">
+        <button id="welcome-go" class="primary" disabled>Show me</button>
+        <button id="welcome-surprise" class="link">Surprise me</button>
+      </div>
     </div>
   </div>
 
   <div id="hud">
-    <div id="crosshair"></div>
-    <div id="label" hidden></div>
-    <div id="hint"></div>
-    <div id="pile" hidden><span class="stack"></span><span id="pile-count">0</span> kept</div>
+    <div id="tip" hidden></div>
+    <nav id="nav" aria-label="Around the shop"></nav>
+    <button id="change" class="corner" type="button">Change what’s on the shelves</button>
+    <aside id="info" hidden aria-live="polite"></aside>
+    <aside id="pile-panel" hidden>
+      <p class="eyebrow">At the till</p>
+      <h2>Your pile</h2>
+      <p id="pile-empty" class="muted">Nothing here yet. When a book catches your eye, choose “Keep for later”.</p>
+      <ul id="pile-list"></ul>
+      <p class="muted small">Buying takes you to Bookshop.org, which shares its profits with independent bookshops.</p>
+    </aside>
     <div id="toast" hidden></div>
+  </div>
+
+  <div id="preview" class="screen" hidden>
+    <div class="card preview">
+      <div class="row between"><h2 id="preview-title"></h2><button id="preview-close" class="link">Close</button></div>
+      <div id="preview-viewer"></div>
+      <p class="muted small">Preview pages courtesy of Google Books and the publisher.</p>
+    </div>
   </div>
   <script type="module" src="/src/bookstore/main.js"></script>
 </body>

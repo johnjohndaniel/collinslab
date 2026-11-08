@@ -1,4 +1,4 @@
-// collinslab books: walk into a bookstore, take books off the shelf, look them over, flip through.
+// collinslab books: a small, curated bookstore you browse with a trackpad.
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
@@ -8,17 +8,24 @@ import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { buildRoom } from './room.js';
-import { ShelfBooks, HandBook } from './books.js';
-import { Player, CoffeeCup } from './player.js';
+import { ShelfBooks, HandBook, bookDims, hash, loadCover, drawSpine } from './books.js';
+import { Displays } from './displays.js';
+import { Curator, MOODS } from './curation.js';
+import { Navigator } from './nav.js';
+import { CoffeeCup } from './player.js';
 import { Sound } from './audio.js';
+
+// Set this to your Bookshop.org affiliate ID once you have one; links then credit you.
+const BOOKSHOP_AFFILIATE = '';
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
-const LITE = params.has('lite'); // test mode for machines without a GPU
-const mark = (m) => { if (params.has('debug')) console.log(`[bookstore] ${m} @ ${Math.round(performance.now())} ms`); };
-globalThis.__bsMark = mark;
+const LITE = params.has('lite');
+const DEBUG = params.has('debug');
+const mark = (m) => { if (DEBUG) console.log(`[bookstore] ${m} @ ${Math.round(performance.now())} ms`); };
 const ease = { inOut: (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2), out: (t) => 1 - (1 - t) ** 3, in: (t) => t * t * t };
-const HELD_KEY = 'collinslab.books.held';
+const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids.filter((k) => k != null && k !== false)); return n; };
+const ORDER = ['front', 'newTable', 'bay0', 'bay1', 'bay2', 'bay3', 'till'];
 
 // ---------------------------------------------------------------------------
 const canvas = $('view');
@@ -28,53 +35,51 @@ renderer.shadowMap.enabled = !LITE;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
-const camera = new THREE.PerspectiveCamera(58, 1, 0.02, 60);
+const camera = new THREE.PerspectiveCamera(56, 1, 0.02, 60);
 camera.rotation.order = 'YXZ';
 
 const manager = new THREE.LoadingManager();
 manager.onProgress = (_, done, total) => { $('bar').style.width = `${Math.round((done / total) * 100)}%`; };
 
 const sound = new Sound();
-let room, shelf, player, cup, composer, bokeh, gtao, bloom;
-let catalog;
-
-// The book in hand and its animation state.
-const S = { mode: 'intro', item: -1, hb: null, anim: null, rot: new THREE.Vector2(), rotVel: new THREE.Vector2(), open: 0, openTarget: 0, held: [] };
+let room, displays, curator, nav, cup, composer, bokeh, gtao, bloom;
+const stations = new Map();
+const S = { mode: 'welcome', mesh: null, hb: null, anim: null, rot: new THREE.Vector2(), rotVel: new THREE.Vector2(), open: 0, openTarget: 0, zoom: 0, heldSince: 0, pagesRead: 0 };
 
 async function init() {
   mark('init');
-  [catalog, room] = await Promise.all([
-    fetch('/bookstore/catalog.json').then((r) => { if (!r.ok) throw new Error('catalogue missing'); return r.json(); }),
+  const [classics, modern, r] = await Promise.all([
+    fetch('/bookstore/catalog.json').then((x) => x.json()),
+    fetch('/bookstore/modern.json').then((x) => (x.ok ? x.json() : { books: [] })).catch(() => ({ books: [] })),
     buildRoom(renderer, manager),
   ]);
-  mark('room + catalogue loaded');
-  const seed = Number(localStorage.getItem('collinslab.books.seed')) || (() => { const s = Math.floor(Math.random() * 1e9); localStorage.setItem('collinslab.books.seed', s); return s; })();
-  shelf = new ShelfBooks(catalog, room.runs, { seed });
-  room.scene.add(shelf.mesh);
-  mark(`shelves filled: ${shelf.items.length} books`);
-  player = new Player(camera, room.colliders, room.spawn);
-  player.onStep = (a) => sound.step(a);
+  room = r;
+  mark(`loaded: ${classics.books.length} classics, ${modern.books.length} recent`);
+  // the glass-fronted antiquarian shelves: atmosphere only
+  const atmos = new ShelfBooks({ books: [], sections: [] }, room.runs, { seed: 7 });
+  room.scene.add(atmos.mesh);
+  displays = new Displays(room.scene, room);
+  curator = new Curator(classics, modern);
+  nav = new Navigator(camera, room.colliders);
+  nav.onStep = (a) => sound.step(a * 0.8);
+  nav.onArrive = arrived;
   cup = new CoffeeCup();
-  // a reading light that follows your head, so a book in hand is always legible
   const reading = new THREE.SpotLight('#fff0dc', 0, 2.5, 0.6, 0.8, 1.5);
   reading.position.set(0.15, 0.35, 0.25); camera.add(reading); reading.target.position.set(0, -0.05, -0.45); camera.add(reading.target);
   S.reading = reading;
   room.scene.add(camera);
 
-  // Post-processing
   composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(room.scene, camera));
   gtao = new GTAOPass(room.scene, camera, innerWidth, innerHeight);
   gtao.updateGtaoMaterial({ radius: 0.35, distanceExponent: 1.5, thickness: 1, scale: 1 });
-  gtao.blendIntensity = 0.85;
+  gtao.blendIntensity = 0.85; gtao.enabled = !LITE;
   composer.addPass(gtao);
-  if (LITE) gtao.enabled = false;
   const cupPass = new RenderPass(cup.scene, camera); cupPass.clear = false; cupPass.clearDepth = true;
   composer.addPass(cupPass);
-  bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.3, 0.55, 1.6);
+  bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.3, 0.55, 1.6); bloom.enabled = !LITE;
   composer.addPass(bloom);
-  bokeh = new BokehPass(room.scene, camera, { focus: 0.45, aperture: 0.0, maxblur: 0.012 });
-  bokeh.enabled = false;
+  bokeh = new BokehPass(room.scene, camera, { focus: 0.45, aperture: 0.0, maxblur: 0.012 }); bokeh.enabled = false;
   composer.addPass(bokeh);
   composer.addPass(new OutputPass());
   composer.addPass(new ShaderPass({
@@ -83,137 +88,300 @@ async function init() {
     fragmentShader: `uniform sampler2D tDiffuse; uniform float time; varying vec2 vUv;
       float rand(vec2 c){ return fract(sin(dot(c, vec2(12.9898,78.233))) * 43758.5453); }
       void main(){ vec4 c = texture2D(tDiffuse, vUv);
-        float v = smoothstep(0.95, 0.35, length(vUv - 0.5)); c.rgb *= mix(0.72, 1.0, v);
-        c.rgb += (rand(vUv * 913.0 + time) - 0.5) * 0.028; gl_FragColor = c; }`,
+        float v = smoothstep(0.95, 0.35, length(vUv - 0.5)); c.rgb *= mix(0.74, 1.0, v);
+        c.rgb += (rand(vUv * 913.0 + time) - 0.5) * 0.024; gl_FragColor = c; }`,
   }));
   resize();
-  restoreHeld();
-  mark('ready');
+  const door = { key: 'door', label: 'Entrance', stand: new THREE.Vector3(0, 0, 8.6), lookAt: new THREE.Vector3(0, 1.3, 0) };
+  stations.set('door', door);
+  stations.set('till', { key: 'till', label: 'Your pile', stand: new THREE.Vector3(2.85, 0, 3.75), lookAt: new THREE.Vector3(4.42, 1.0, 3.72) });
+  nav.goTo(door, true);
+  arrange();
+  showWelcome();
   $('loading').hidden = true;
-  $('intro').hidden = false;
+  mark('ready');
   renderer.setAnimationLoop(frame);
 }
 
 function resize() {
-  const w = innerWidth, h = innerHeight;
-  renderer.setSize(w, h, false);
-  camera.aspect = w / h; camera.updateProjectionMatrix();
-  composer?.setSize(w, h);
+  renderer.setSize(innerWidth, innerHeight, false);
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  composer?.setSize(innerWidth, innerHeight);
 }
 addEventListener('resize', resize);
 
 // ---------------------------------------------------------------------------
-// Input
-const enter = () => { canvas.requestPointerLock?.(); sound.start(); };
-$('enter').addEventListener('click', enter);
-$('resume').addEventListener('click', enter);
-document.addEventListener('pointerlockchange', () => {
-  const locked = document.pointerLockElement === canvas;
-  $('intro').hidden = true;
-  $('pause').hidden = locked || S.mode === 'intro';
-  if (locked && S.mode === 'intro') S.mode = 'walk';
-  if (!locked && S.mode !== 'intro') renderHeldList();
-  $('hud').classList.toggle('active', locked);
+// Curation & stations
+function arrange() {
+  const arr = curator.arrange();
+  displays.build(arr);
+  for (const st of displays.stations) stations.set(st.key, st);
+  [...arr.front, ...arr.newTable, ...arr.bays.flatMap((b) => b.books), ...curator.kept].forEach((b) => loadCover(b));
+  buildPile();
+  renderNav();
+}
+
+function renderNav() {
+  const items = ORDER.filter((k) => stations.has(k)).map((k) => {
+    const st = stations.get(k);
+    const label = k === 'till' ? `Your pile${curator.kept.length ? ` (${curator.kept.length})` : ''}` : st.label;
+    const b = el('button', { className: 'nav-item', textContent: label, type: 'button' });
+    b.classList.toggle('here', nav.station?.key === k);
+    b.addEventListener('click', () => go(k));
+    return b;
+  });
+  $('nav').replaceChildren(...items);
+}
+
+function go(key) {
+  if (S.mode === 'hold') putBack();
+  if (S.mode !== 'browse') return;
+  const st = stations.get(key); if (!st || st === nav.station) return;
+  sound.start();
+  nav.goTo(st);
+  $('pile-panel').hidden = true;
+  renderNav();
+}
+
+function arrived(st) {
+  renderNav();
+  $('pile-panel').hidden = st.key !== 'till';
+  if (st.key === 'till') renderPilePanel();
+}
+
+function stepStation(dir) {
+  const order = ORDER.filter((k) => stations.has(k));
+  const i = order.indexOf(nav.station?.key);
+  go(order[(i + dir + order.length) % order.length] ?? order[0]);
+}
+
+// ---------------------------------------------------------------------------
+// Welcome: choose what to browse today
+function showWelcome() {
+  if (S.mode === 'hold' || S.mode === 'pull' || S.mode === 'return' || S.mode === 'keep') return;
+  S.mode = 'welcome';
+  $('pile-panel').hidden = true;
+  const chosen = new Set(curator.prefs.sections), moods = new Set(curator.prefs.moods);
+  const refresh = () => {
+    $('welcome-go').disabled = chosen.size === 0;
+    $('welcome-count').textContent = chosen.size ? `${chosen.size} of 3 chosen` : 'Choose up to three';
+  };
+  const chip = (key, label, set, max) => {
+    const b = el('button', { className: 'chip', type: 'button', textContent: label });
+    b.setAttribute('aria-pressed', String(set.has(key)));
+    b.addEventListener('click', () => {
+      if (set.has(key)) set.delete(key); else if (!max || set.size < max) set.add(key);
+      b.setAttribute('aria-pressed', String(set.has(key)));
+      refresh();
+    });
+    return b;
+  };
+  $('welcome-sections').replaceChildren(...curator.sections.map((s) => chip(s.key, s.label, chosen, 3)));
+  $('welcome-moods').replaceChildren(...MOODS.map((m) => chip(m.key, m.label, moods)));
+  $('welcome-title').textContent = curator.hasChosen ? 'Welcome back.' : 'Good to see you.';
+  refresh();
+  const start = () => {
+    sound.start();
+    curator.choose([...chosen], [...moods]);
+    $('welcome').hidden = true; $('hud').classList.add('active');
+    S.mode = 'browse';
+    arrange();
+    nav.goTo(stations.get('front'));
+  };
+  $('welcome-go').onclick = start;
+  $('welcome-surprise').onclick = () => {
+    chosen.clear();
+    curator.sections.map((s) => s.key).sort(() => Math.random() - 0.5).slice(0, 3).forEach((k) => chosen.add(k));
+    start();
+  };
+  $('welcome').hidden = false; $('hud').classList.remove('active');
+}
+
+// ---------------------------------------------------------------------------
+// Input: trackpad first. Two-finger scroll looks (or turns a held book); horizontal
+// swipes turn pages; pinch brings the book closer; click picks up / goes / puts down.
+const ray = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+let drag = null, swipeAcc = 0, swipeTimer;
+const setNdc = (e) => { ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera); };
+
+canvas.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, moved: false, id: e.pointerId }; canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener('pointermove', (e) => {
+  if (drag && drag.id === e.pointerId) {
+    const mx = e.clientX - drag.lx, my = e.clientY - drag.ly; drag.lx = e.clientX; drag.ly = e.clientY;
+    if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 5) drag.moved = true;
+    if (drag.moved) {
+      if (S.mode === 'hold') { S.rotVel.x += mx * 0.008; S.rotVel.y += my * 0.008; }
+      else if (S.mode === 'browse') nav.nudge(mx * 0.004, my * 0.004);
+    }
+    return;
+  }
+  hoverAt(e);
 });
-document.addEventListener('mousemove', (e) => {
-  if (document.pointerLockElement !== canvas) return;
-  if (S.mode === 'hold') { S.rotVel.x += e.movementX * 0.006; S.rotVel.y += e.movementY * 0.006; }
-  else if (S.mode === 'walk') player.look(e.movementX, e.movementY);
+canvas.addEventListener('pointerup', (e) => {
+  const wasDrag = drag?.moved; drag = null;
+  if (!wasDrag) clickAt(e);
 });
-canvas.addEventListener('mousedown', (e) => {
-  if (document.pointerLockElement !== canvas) return;
-  if (e.button === 0 && S.mode === 'walk' && shelf.hover >= 0 && shelf.items[shelf.hover].bookIndex != null) pickUp(shelf.hover);
-  if (e.button === 2 && S.mode === 'hold') putBack();
-});
-canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-addEventListener('wheel', (e) => { if (S.mode === 'hold' && S.open > 0.99) turn(e.deltaY > 0 ? 1 : -1); }, { passive: true });
+canvas.addEventListener('pointerleave', () => { if (displays) displays.hover = null; $('tip').hidden = true; });
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  if (e.ctrlKey) { // pinch
+    if (S.mode === 'hold') S.zoom = Math.max(0, Math.min(1, S.zoom - e.deltaY * 0.01));
+    return;
+  }
+  if (S.mode === 'hold') {
+    if (S.open > 0.95 && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+      swipeAcc += e.deltaX;
+      clearTimeout(swipeTimer); swipeTimer = setTimeout(() => { swipeAcc = 0; }, 250);
+      if (Math.abs(swipeAcc) > 70) { turn(swipeAcc > 0 ? 1 : -1); swipeAcc = -Math.sign(swipeAcc) * 400; } // one page per swipe
+    } else if (S.open < 0.05) { S.rotVel.x += e.deltaX * 0.004; S.rotVel.y += e.deltaY * 0.004; }
+    return;
+  }
+  if (S.mode === 'browse') nav.nudge(e.deltaX * 0.0025, e.deltaY * 0.0025);
+}, { passive: false });
+canvas.addEventListener('contextmenu', (e) => { e.preventDefault(); if (S.mode === 'hold') putBack(); });
+
 addEventListener('keydown', (e) => {
+  if (e.target.closest?.('input, textarea')) return;
   if (e.code === 'KeyM') toast(sound.toggle() ? 'Sound off' : 'Sound on');
+  if (S.mode === 'browse') {
+    if (e.code === 'ArrowRight') stepStation(1);
+    if (e.code === 'ArrowLeft') stepStation(-1);
+    return;
+  }
   if (S.mode !== 'hold') return;
   if (e.code === 'Space') { e.preventDefault(); toggleOpen(); }
-  else if (e.code === 'KeyR' || e.code === 'Backspace') putBack();
-  else if (e.code === 'KeyH') keep();
-  else if (['ArrowRight', 'KeyD'].includes(e.code)) turn(1);
-  else if (['ArrowLeft', 'KeyA'].includes(e.code)) turn(-1);
+  else if (e.code === 'Escape' || e.code === 'Backspace') putBack();
+  else if (e.code === 'KeyK') keep();
+  else if (e.code === 'ArrowRight') turn(1);
+  else if (e.code === 'ArrowLeft') turn(-1);
 });
+
+function nearestStation(mesh) {
+  let best = null, d = Infinity;
+  for (const st of stations.values()) { if (st.key === 'door' || st.key === 'till') continue; const dd = st.lookAt.distanceTo(mesh.position); if (dd < d) { d = dd; best = st.key; } }
+  return best;
+}
+
+function hoverAt(e) {
+  const tip = $('tip');
+  if (S.mode !== 'browse' || nav.moving) { tip.hidden = true; canvas.style.cursor = 'default'; if (displays) displays.hover = null; return; }
+  setNdc(e);
+  const hit = displays.pick(ray);
+  displays.hover = hit?.book && hit.distance < 3.2 ? hit.book : null;
+  if (hit?.book && hit.distance < 3.2) {
+    const b = hit.book.userData.book;
+    tip.replaceChildren(el('strong', { textContent: b.title }), el('span', { textContent: `${b.author} · ${b.year < 0 ? `${-b.year} BCE` : b.year}` }));
+  } else if (hit && (hit.station || hit.book)) {
+    const key = hit.station || nearestStation(hit.book);
+    if (key === nav.station?.key) { tip.hidden = true; canvas.style.cursor = 'default'; return; }
+    tip.replaceChildren(el('span', { textContent: `Walk over to ${stations.get(key)?.label}` }));
+  } else { tip.hidden = true; canvas.style.cursor = 'default'; return; }
+  canvas.style.cursor = 'pointer';
+  tip.style.left = `${e.clientX}px`; tip.style.top = `${e.clientY}px`; tip.hidden = false;
+}
+
+function clickAt(e) {
+  setNdc(e);
+  if (S.mode === 'hold') {
+    // clicking the open book turns pages; clicking elsewhere sets it down
+    const hits = S.hb ? ray.intersectObject(S.hb.pivot, true) : [];
+    if (!hits.length) { putBack(); return; }
+    if (S.open > 0.95) turn(e.clientX > innerWidth * 0.45 ? 1 : -1);
+    return;
+  }
+  if (S.mode !== 'browse' || nav.moving) return;
+  const hit = displays.pick(ray);
+  if (!hit) return;
+  if (hit.book && hit.distance < 3.2) pickUp(hit.book);
+  else go(hit.station || nearestStation(hit.book));
+}
 
 // ---------------------------------------------------------------------------
 // Book choreography
 const tmpM = new THREE.Matrix4();
-function shelfPose(item) {
-  // pivot centre = spine centre moved half a cover-width into the shelf
-  const m = item.matrix.clone().multiply(tmpM.makeTranslation(item.dims.w / 2, 0, 0));
+function homePose(mesh) {
+  // HandBook's pivot sits at the centre of the closed book; display meshes have their origin at the spine
+  const { home } = mesh.userData;
+  const m = new THREE.Matrix4().compose(home.p, home.q, new THREE.Vector3(1, 1, 1)).multiply(tmpM.makeTranslation(mesh.userData.dims.w / 2, 0, 0));
   const p = new THREE.Vector3(), q = new THREE.Quaternion(), s = new THREE.Vector3();
   m.decompose(p, q, s);
   return { p, q };
 }
 function handPose() {
   camera.updateMatrixWorld();
-  const p = new THREE.Vector3(0, -0.025, -0.43).applyMatrix4(camera.matrixWorld);
-  const q = camera.quaternion.clone().multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.06, 0, 0)));
+  const z = -0.43 + 0.12 * ease.inOut(S.zoom);
+  const p = new THREE.Vector3(-0.07, -0.02, z).applyMatrix4(camera.matrixWorld);
+  const q = camera.quaternion.clone().multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.05, 0, 0)));
   return { p, q };
 }
 
-function pickUp(i) {
-  const item = shelf.items[i], book = catalog.books[item.bookIndex];
-  S.item = i;
-  S.hb = new HandBook(book, item.dims);
+function pickUp(mesh) {
+  const book = mesh.userData.book;
+  S.mesh = mesh;
+  S.hb = new HandBook(book, mesh.userData.dims);
   S.hb.showSpread(0);
   room.scene.add(S.hb.pivot);
-  shelf.setHidden(i, true);
-  shelf.hover = -1;
-  S.rot.set(0, 0); S.rotVel.set(0, 0); S.open = 0; S.openTarget = 0; S.hb.setOpenness(0);
-  const from = shelfPose(item);
-  // Turn the book so the spine faces you, as it did on the shelf: rotate the pivot pose
-  // (book +z = front cover) so its spine (-x) points out of the shelf.
-  S.anim = { kind: 'pull', t: 0, from, normal: item.normal.clone(), dur1: 0.34, dur2: 0.62 };
-  S.mode = 'pull'; player.enabled = false; cup.target = 1;
+  mesh.visible = false; displays.hover = null;
+  S.rot.set(0, 0); S.rotVel.set(0, 0); S.open = 0; S.openTarget = 0; S.zoom = 0; S.hb.setOpenness(0);
+  S.heldSince = performance.now(); S.pagesRead = 0;
+  S.anim = { t: 0, from: homePose(mesh), normal: mesh.userData.out.clone().normalize() };
+  S.mode = 'pull'; cup.target = 1;
+  curator.signal(book, 'pick');
   sound.slide();
-  setHint('hold');
-  $('label').hidden = true;
+  $('tip').hidden = true; canvas.style.cursor = 'default';
+  showInfo(book);
 }
 
 function putBack() {
   if (!S.hb || S.mode !== 'hold') return;
+  const held = (performance.now() - S.heldSince) / 1000;
+  if (held < 2.5 && !S.pagesRead) curator.signal(S.hb.book, 'putback-quick');
+  else if (held > 8) curator.signal(S.hb.book, 'linger');
   S.hb.showSpread(0);
-  S.anim = { kind: 'return', t: 0, start: { p: S.hb.pivot.position.clone(), q: S.hb.pivot.quaternion.clone() }, closeFrom: S.open };
+  S.anim = { t: 0, start: { p: S.hb.pivot.position.clone(), q: S.hb.pivot.quaternion.clone() } };
   S.mode = 'return';
+  hideInfo();
   sound.slide();
 }
 
 function keep() {
   if (!S.hb || S.mode !== 'hold') return;
   const book = S.hb.book;
-  S.held.push({ id: book.id, title: book.title, author: book.author, item: S.item });
-  saveHeld();
-  S.anim = { kind: 'keep', t: 0, start: { p: S.hb.pivot.position.clone(), q: S.hb.pivot.quaternion.clone(), s: 1 } };
+  curator.keep(book);
+  S.anim = { t: 0, start: { p: S.hb.pivot.position.clone(), q: S.hb.pivot.quaternion.clone() } };
   S.mode = 'keep';
+  hideInfo();
   sound.thump();
-  toast(`Kept “${book.title}” · ${S.held.length} on your pile`);
+  toast(`“${book.title}” is waiting on your pile at the till`);
 }
 
 function toggleOpen() {
-  if (!S.hb || S.hb.flipT !== null) return;
-  if (S.openTarget === 0) { S.openTarget = 1; S.hb.showSpread(0); sound.cover(); }
-  else { S.hb.showSpread(0); S.openTarget = 0; sound.cover(); }
+  if (!S.hb?.canOpen || S.hb.flipT !== null) return;
+  S.hb.showSpread(0);
+  S.openTarget = S.openTarget ? 0 : 1;
+  if (S.openTarget) S.rot.set(0, 0);
+  sound.cover();
+  updateInfoButtons();
 }
 
 function turn(dir) {
-  if (!S.hb || S.open < 0.99) return;
-  if (S.hb.beginFlip(dir)) sound.page();
+  if (!S.hb || S.open < 0.95) return;
+  if (S.hb.beginFlip(dir)) { sound.page(); if (dir > 0) { S.pagesRead++; curator.signal(S.hb.book, 'read', 0.5); } }
 }
 
-function finishHold() {
+function finishHold(returned) {
   room.scene.remove(S.hb.pivot);
-  S.hb.dispose(); S.hb = null; S.item = -1;
-  S.mode = 'walk'; player.enabled = true; cup.target = 0;
-  setHint('walk');
+  S.hb.dispose(); S.hb = null;
+  if (returned && S.mesh) S.mesh.visible = true;
+  if (!returned) { buildPile(); renderNav(); }
+  S.mesh = null;
+  S.mode = 'browse'; cup.target = 0;
 }
 
 function updateBook(dt) {
   const hb = S.hb; if (!hb) return;
   const pv = hb.pivot, a = S.anim;
-  // opening / closing
   S.open += (S.openTarget - S.open) * Math.min(1, dt * 5.5);
   if (Math.abs(S.open - S.openTarget) < 0.002) S.open = S.openTarget;
   hb.setOpenness(ease.inOut(S.open));
@@ -223,38 +391,32 @@ function updateBook(dt) {
     a.t += dt;
     const { p: sp, q: sq } = a.from;
     const out = sp.clone().addScaledVector(a.normal, 0.14);
-    const tilt = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3().crossVectors(a.normal, new THREE.Vector3(0, 1, 0)).normalize(), 0.12);
-    if (a.t < a.dur1) {
-      const e = ease.out(a.t / a.dur1);
-      pv.position.lerpVectors(sp, out, e);
-      pv.quaternion.copy(sq).premultiply(new THREE.Quaternion().slerp(tilt, Math.sin(e * Math.PI) * 0.8));
+    const d1 = 0.32, d2 = 0.7;
+    if (a.t < d1) {
+      pv.position.lerpVectors(sp, out, ease.out(a.t / d1)); pv.quaternion.copy(sq);
     } else {
-      const e = ease.inOut(Math.min(1, (a.t - a.dur1) / a.dur2));
+      const e = ease.inOut(Math.min(1, (a.t - d1) / d2));
       const { p: hp, q: hq } = handPose();
-      const mid = out.clone().lerp(hp, 0.5).add(new THREE.Vector3(0, 0.12, 0));
-      // quadratic Bézier arc from the shelf to your hands
+      const mid = out.clone().lerp(hp, 0.5).add(new THREE.Vector3(0, 0.1, 0));
       pv.position.copy(out.clone().multiplyScalar((1 - e) ** 2).addScaledVector(mid, 2 * (1 - e) * e).addScaledVector(hp, e * e));
       pv.quaternion.copy(sq).slerp(hq, e);
-      if (e >= 1) { S.mode = 'hold'; }
+      if (e >= 1) S.mode = 'hold';
     }
   } else if (S.mode === 'hold') {
     S.rot.add(S.rotVel); S.rotVel.multiplyScalar(Math.exp(-dt * 10));
-    if (S.openTarget > 0) S.rot.multiplyScalar(1 - Math.min(1, dt * 6)); // face the spread when reading
+    if (S.openTarget > 0) S.rot.multiplyScalar(1 - Math.min(1, dt * 6));
     S.rot.y = Math.max(-1.2, Math.min(1.2, S.rot.y));
     const { p, q } = handPose();
     const breathe = Math.sin(performance.now() / 1000 * 1.1) * 0.0015;
-    const open = ease.inOut(S.open);
-    pv.position.lerp(p.add(new THREE.Vector3(0, breathe - 0.01 * open, 0).applyQuaternion(camera.quaternion)), Math.min(1, dt * 12));
+    pv.position.lerp(p.add(new THREE.Vector3(-0.035 * ease.inOut(S.open), breathe, 0).applyQuaternion(camera.quaternion)), Math.min(1, dt * 10));
     const user = new THREE.Quaternion().setFromEuler(new THREE.Euler(S.rot.y, S.rot.x, 0, 'YXZ'));
-    pv.quaternion.slerp(q.multiply(user), Math.min(1, dt * 14));
-    // move closer to read when open
-    pv.position.add(new THREE.Vector3(0, 0, 0.02 * open).applyQuaternion(camera.quaternion));
+    pv.quaternion.slerp(q.multiply(user), Math.min(1, dt * 12));
   } else if (S.mode === 'return') {
     a.t += dt;
-    const item = shelf.items[S.item], { p: sp, q: sq } = shelfPose(item);
-    const out = sp.clone().addScaledVector(item.normal, 0.14);
+    const { p: sp, q: sq } = homePose(S.mesh);
+    const out = sp.clone().addScaledVector(S.mesh.userData.out.clone().normalize(), 0.14);
     S.openTarget = 0;
-    const d1 = 0.55, d2 = 0.32;
+    const d1 = 0.6, d2 = 0.3;
     if (a.t < d1) {
       const e = ease.inOut(a.t / d1);
       const mid = a.start.p.clone().lerp(out, 0.5).add(new THREE.Vector3(0, 0.08, 0));
@@ -263,117 +425,150 @@ function updateBook(dt) {
     } else {
       const e = ease.inOut(Math.min(1, (a.t - d1) / d2));
       pv.position.lerpVectors(out, sp, e); pv.quaternion.copy(sq);
-      if (e >= 1) { shelf.setHidden(S.item, false); sound.thump(); finishHold(); }
+      if (e >= 1) { sound.thump(); finishHold(true); }
     }
   } else if (S.mode === 'keep') {
     a.t += dt;
-    const e = ease.in(Math.min(1, a.t / 0.5));
-    const target = new THREE.Vector3(-0.32, -0.32, -0.5).applyMatrix4(camera.matrixWorld);
-    pv.position.lerpVectors(a.start.p, target, e);
-    pv.scale.setScalar(1 - 0.7 * e);
-    pv.rotateZ(dt * 2);
-    if (e >= 1) { pv.scale.setScalar(1); bumpPile(); finishHold(); }
+    const e = ease.inOut(Math.min(1, a.t / 0.6));
+    pv.position.lerpVectors(a.start.p, new THREE.Vector3(0.3, -0.35, -0.6).applyMatrix4(camera.matrixWorld), e);
+    pv.scale.setScalar(1 - 0.6 * e);
+    if (e >= 1) finishHold(false);
   }
-  // depth of field + reading light follow the book
   const near = S.mode === 'hold' || S.mode === 'pull';
-  const dist = camera.position.distanceTo(pv.position);
-  bokeh.uniforms.focus.value = dist;
+  bokeh.uniforms.focus.value = camera.position.distanceTo(pv.position);
   const ap = bokeh.uniforms.aperture.value;
   bokeh.uniforms.aperture.value = ap + ((near ? 0.03 : 0) - ap) * Math.min(1, dt * 4);
   S.reading.intensity += ((near ? 0.35 : 0) - S.reading.intensity) * Math.min(1, dt * 4);
 }
 
 // ---------------------------------------------------------------------------
-// Kept books
-function saveHeld() { localStorage.setItem(HELD_KEY, JSON.stringify(S.held.map(({ id, title, author }) => ({ id, title, author })))); }
-function restoreHeld() {
-  let saved = [];
-  try { saved = JSON.parse(localStorage.getItem(HELD_KEY) || '[]'); } catch { saved = []; }
-  for (const h of saved) {
-    const bi = catalog.books.findIndex((b) => b.id === h.id);
-    const item = shelf.items.findIndex((it) => it.bookIndex === bi && !it.hidden);
-    if (item >= 0) { shelf.setHidden(item, true); S.held.push({ ...h, item }); }
+// The card beside a book you're holding
+function buyLink(b) {
+  if (b.isbn13) return BOOKSHOP_AFFILIATE ? `https://bookshop.org/a/${BOOKSHOP_AFFILIATE}/${b.isbn13}` : `https://bookshop.org/search?keywords=${b.isbn13}`;
+  return `https://bookshop.org/search?keywords=${encodeURIComponent(`${b.title} ${b.author}`)}`;
+}
+
+function showInfo(b) {
+  const yr = b.year < 0 ? `${-b.year} BCE` : b.year;
+  const links = el('div', { className: 'links' },
+    el('a', { href: buyLink(b), target: '_blank', rel: 'noopener', textContent: 'Buy from Bookshop.org ↗' }),
+    b.gutenberg ? el('a', { href: `https://www.gutenberg.org/ebooks/${b.gutenberg}`, target: '_blank', rel: 'noopener', textContent: 'Read free at Project Gutenberg ↗' }) : null,
+    !b.preview && b.google_id ? el('a', { href: `https://books.google.com/books?id=${b.google_id}`, target: '_blank', rel: 'noopener', textContent: 'See it on Google Books ↗' }) : null);
+  $('info').replaceChildren(
+    el('p', { className: 'eyebrow', textContent: curator.labels[b.section] || '' }),
+    el('h2', { textContent: b.title }),
+    el('p', { className: 'byline', textContent: `${b.author} · ${yr}` }),
+    b.tagline ? el('p', { className: 'tagline', textContent: b.tagline }) : null,
+    el('div', { className: 'actions', id: 'info-actions' }),
+    links,
+    el('p', { className: 'gesture' }));
+  updateInfoButtons();
+  $('info').hidden = false;
+  requestAnimationFrame(() => $('info').classList.add('shown'));
+}
+function updateInfoButtons() {
+  const b = S.hb?.book; if (!b) return;
+  const btn = (label, fn, cls = '') => { const x = el('button', { type: 'button', className: cls, textContent: label }); x.addEventListener('click', fn); return x; };
+  const open = S.openTarget > 0;
+  $('info-actions').replaceChildren(...[
+    S.hb.canOpen ? btn(open ? 'Close it' : 'Open and read', toggleOpen, 'primary') : null,
+    open ? el('span', { className: 'pager' }, btn('‹', () => turn(-1)), btn('›', () => turn(1))) : null,
+    !S.hb.canOpen && b.preview && b.google_id ? btn('Look inside', () => lookInside(b), 'primary') : null,
+    !open ? btn('Turn it over', () => { S.rotVel.x += Math.PI / 14; }) : null,
+    btn('Keep for later', keep),
+    btn('Put it back', putBack, 'quiet'),
+  ].filter(Boolean));
+  $('info').querySelector('.gesture').textContent = open
+    ? 'Swipe sideways or click a page to turn it. Pinch to bring it closer.'
+    : 'Drag or two-finger scroll to turn it over. Click anywhere else to put it back.';
+}
+function hideInfo() { $('info').classList.remove('shown'); setTimeout(() => { if (!$('info').classList.contains('shown')) $('info').hidden = true; }, 300); }
+
+// Google Books embedded preview for recent books (publisher-approved pages only).
+let gbReady = null;
+function lookInside(b) {
+  $('preview').hidden = false;
+  $('preview-title').textContent = b.title;
+  const host = $('preview-viewer'); host.replaceChildren(el('p', { textContent: 'Opening the preview…' }));
+  gbReady ||= new Promise((resolve, reject) => {
+    const s = el('script', { src: 'https://www.google.com/books/jsapi.js', async: true });
+    s.onload = () => { google.books.load(); google.books.setOnLoadCallback(resolve); };
+    s.onerror = reject; document.head.append(s);
+  });
+  gbReady.then(() => {
+    host.replaceChildren();
+    new google.books.DefaultViewer(host).load(b.google_id, () => host.replaceChildren(el('p', { textContent: 'No preview is available for this edition.' })));
+  }).catch(() => host.replaceChildren(el('p', { textContent: 'The preview could not be loaded.' })));
+}
+$('preview-close').addEventListener('click', () => { $('preview').hidden = true; });
+$('change').addEventListener('click', () => showWelcome());
+
+// ---------------------------------------------------------------------------
+// Your pile: a real stack on the café counter, and a list beside it at the till
+let pileGroup = null;
+function buildPile() {
+  if (pileGroup) {
+    pileGroup.traverse((o) => { if (o.isMesh) { o.geometry.dispose(); o.material.forEach((m) => { m.map?.dispose(); m.dispose(); }); } });
+    room.scene.remove(pileGroup);
   }
-  bumpPile(false);
+  pileGroup = new THREE.Group();
+  let y = 1.05;
+  curator.kept.forEach((b, i) => {
+    const d = bookDims(b, () => (hash(b.id + i) % 1000) / 1000);
+    const c = Object.assign(document.createElement('canvas'), { width: 64, height: 384 });
+    drawSpine(c.getContext('2d'), b, 64, 384);
+    const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+    const edge = new THREE.MeshStandardMaterial({ color: '#efe6d2', roughness: 0.95 });
+    const cover = new THREE.MeshStandardMaterial({ color: b.palette?.bg || '#5a3a2a', roughness: 0.7 });
+    const spine = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.7 });
+    // lying flat on the counter; the spine faces the till station so the titles read
+    const m = new THREE.Mesh(new THREE.BoxGeometry(d.t, d.h, d.w).rotateZ(Math.PI / 2), [cover, cover, edge, edge, edge, spine]);
+    m.position.set(4.42, y + d.t / 2, 3.72); m.rotation.y = -Math.PI / 2 + ((hash(b.id) % 100) - 50) / 600;
+    m.castShadow = true; m.receiveShadow = true;
+    pileGroup.add(m); y += d.t + 0.001;
+  });
+  room.scene.add(pileGroup);
 }
-function bumpPile(animate = true) {
-  $('pile-count').textContent = S.held.length;
-  $('pile').hidden = S.held.length === 0;
-  if (animate) { $('pile').classList.remove('bump'); void $('pile').offsetWidth; $('pile').classList.add('bump'); }
-}
-function renderHeldList() {
-  const ul = $('held-list');
-  ul.replaceChildren(...S.held.map((h, i) => {
-    const li = document.createElement('li');
-    const name = document.createElement('span'); name.innerHTML = '<strong></strong><em></em>';
-    name.querySelector('strong').textContent = h.title; name.querySelector('em').textContent = ` · ${h.author}`;
-    const btn = document.createElement('button'); btn.textContent = 'Put back on its shelf'; btn.className = 'btn ghost';
-    btn.addEventListener('click', () => { if (h.item >= 0) shelf.setHidden(h.item, false); S.held.splice(i, 1); saveHeld(); bumpPile(false); renderHeldList(); });
-    li.append(name, btn); return li;
+function renderPilePanel() {
+  const kept = curator.kept;
+  $('pile-list').replaceChildren(...kept.map((b) => {
+    const back = el('button', { type: 'button', textContent: 'Return to the shelves' });
+    back.addEventListener('click', () => { curator.unkeep(b.id); arrange(); renderPilePanel(); });
+    return el('li', {},
+      el('div', {}, el('strong', { textContent: b.title }), el('span', { className: 'muted', textContent: ` · ${b.author}` })),
+      el('div', { className: 'row' }, el('a', { href: buyLink(b), target: '_blank', rel: 'noopener', textContent: 'Buy ↗' }), back));
   }));
-  $('held-empty').hidden = S.held.length > 0;
+  $('pile-empty').hidden = kept.length > 0;
 }
 
 // ---------------------------------------------------------------------------
-// HUD
-function setHint(mode) {
-  $('hint').innerHTML = mode === 'hold'
-    ? '<b>Move mouse</b> turn it over · <b>Space</b> open / close · <b>← →</b> or <b>wheel</b> turn pages · <b>H</b> keep it · <b>R</b> or <b>right-click</b> put it back'
-    : '<b>W A S D</b> walk · <b>Shift</b> stroll faster · <b>mouse</b> look · <b>click</b> a book to take it off the shelf · <b>M</b> sound · <b>Esc</b> menu';
-}
 let toastTimer;
-function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 2200); }
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 2600); }
 
-const ray = new THREE.Raycaster();
-function updateHover() {
-  if (S.mode !== 'walk') { shelf.hover = -1; return; }
-  ray.setFromCamera(new THREE.Vector2(0, 0), camera);
-  const i = shelf.pick(ray.ray);
-  shelf.hover = i;
-  const label = $('label');
-  if (i < 0) { label.hidden = true; $('crosshair').classList.remove('on'); return; }
-  const it = shelf.items[i];
-  $('crosshair').classList.toggle('on', it.bookIndex != null);
-  if (it.bookIndex == null) { label.hidden = false; label.innerHTML = '<em>An old, unmarked volume</em>'; return; }
-  const b = catalog.books[it.bookIndex];
-  label.hidden = false;
-  label.innerHTML = '';
-  const t = document.createElement('strong'); t.textContent = b.title;
-  const a = document.createElement('span'); a.textContent = b.author;
-  label.append(t, a);
-}
-
-// ---------------------------------------------------------------------------
 const clock = new THREE.Timer();
 let slowFrames = 0, quality = 'high';
 function frame(now) {
   clock.update(now);
-  const dt = Math.min(clock.getDelta(), params.has('debug') ? 0.5 : 0.05), t = clock.getElapsed();
-  const walk = player.update(S.mode === 'intro' ? 0 : dt);
+  const dt = Math.min(clock.getDelta(), DEBUG ? 0.5 : 0.05), t = clock.getElapsed();
+  const walk = nav.update(S.mode === 'welcome' ? 0 : dt);
   camera.updateMatrixWorld();
-  updateHover();
-  shelf.update(dt);
+  displays.update(dt);
   updateBook(dt);
   bokeh.enabled = !LITE && bokeh.uniforms.aperture.value > 0.001;
-  if (LITE) bloom.enabled = false;
   cup.update(dt, camera, walk, t);
   composer.passes.at(-1).uniforms.time.value = t % 100;
   composer.render(dt);
-  if (!frame.n) { frame.n = 1; mark('first frame rendered'); }
-  // drop the expensive passes if the machine is struggling
+  if (!frame.n) { frame.n = 1; mark('first frame'); }
   slowFrames = dt > 0.034 ? slowFrames + 1 : Math.max(0, slowFrames - 1);
-  if (quality === 'high' && slowFrames > 90) { quality = 'low'; gtao.enabled = false; renderer.setPixelRatio(1); resize(); toast('Lowered quality for smoother movement'); }
+  if (!DEBUG && quality === 'high' && slowFrames > 90) { quality = 'low'; gtao.enabled = false; renderer.setPixelRatio(1); resize(); }
 }
 
-setHint('walk');
-// Test hook (only with ?debug): lets automated checks walk and act without pointer lock.
-if (new URLSearchParams(location.search).has('debug')) {
+if (DEBUG) {
   window.__bs = {
-    S, get player() { return player; }, get shelf() { return shelf; }, camera, pickUp, toggleOpen, turn, keep, putBack,
-    walk() { S.mode = 'walk'; $('intro').hidden = true; $('hud').classList.add('active'); },
-    place(x, z, yaw, pitch = 0) { Object.assign(player.pos, { x, z }); player.yaw = yaw; player.pitch = pitch; },
-    rotate(x, y) { S.rot.set(x, y); },
-    state: () => ({ mode: S.mode, hover: shelf?.hover, open: S.open, spread: S.hb?.spread, flipping: S.hb?.flipT != null }),
+    S, stations, camera, get nav() { return nav; }, get displays() { return displays; }, get curator() { return curator; },
+    choose: (secs) => { curator.choose(secs); $('welcome').hidden = true; $('hud').classList.add('active'); S.mode = 'browse'; arrange(); },
+    go, pickUp, putBack, keep, toggleOpen, turn, rotate: (x, y) => S.rot.set(x, y),
+    state: () => ({ mode: S.mode, station: nav?.station?.key, moving: nav?.moving, open: S.open, spread: S.hb?.spread, kept: curator?.kept.length }),
   };
 }
 init().catch((e) => { $('loading-msg').textContent = `Could not open the store: ${e.message}`; console.error(e); });

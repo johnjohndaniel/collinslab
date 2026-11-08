@@ -92,7 +92,6 @@ export class CoffeeCup {
     g.fillStyle = '#a0723f'; g.fillRect(0, 0, 512, 96);
     g.fillStyle = '#5a3a1c'; g.font = 'italic 34px Georgia, serif'; g.textAlign = 'center'; g.fillText('the reading room', 128, 60); g.fillText('the reading room', 384, 60);
     const sleeveTex = new THREE.CanvasTexture(c); sleeveTex.colorSpace = THREE.SRGBColorSpace;
-    sleeveTex.wrapS = THREE.RepeatWrapping; sleeveTex.repeat.x = -1; // the cylinder's UVs run right-to-left seen from outside
     const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.0355, 0.0325, 0.045, 40, 1, true), new THREE.MeshStandardMaterial({ map: sleeveTex, roughness: 0.9, side: THREE.DoubleSide }));
     sleeve.position.y = 0.055;
     const lidProf = [[0, 0.02], [0.03, 0.02], [0.034, 0.012], [0.039, 0.008], [0.039, 0.0], [0.036, 0.0]].map(([x, y]) => new THREE.Vector2(x, y));
@@ -124,7 +123,7 @@ export class CoffeeCup {
     const bobX = Math.cos(walk.phase * 0.5) * 0.008 * walk.bob, bobY = Math.abs(Math.sin(walk.phase)) * 0.01 * walk.bob;
     const idle = Math.sin(time * 1.3) * 0.003;
     // position in camera space, then to world
-    const local = new THREE.Vector3(0.2 + bobX, -0.2 + bobY + idle - this.lowered * 0.35, -0.42);
+    const local = new THREE.Vector3(0.25 + bobX, -0.235 + bobY + idle - this.lowered * 0.35, -0.44);
     this.group.position.copy(local.applyMatrix4(camera.matrixWorld));
     this.group.quaternion.copy(camera.quaternion);
     this.group.rotateX(0.12 - this.lowered * 0.5); this.group.rotateZ(-0.05 + bobX);

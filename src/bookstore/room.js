@@ -11,7 +11,7 @@ const A = '/bookstore/assets';
 export const ROOM = { W: 14, D: 20, H: 3.6 };
 
 // Box whose UVs are in world units (so textures tile at a constant scale).
-function box(w, h, d, scale = 1) {
+export function box(w, h, d, scale = 1) {
   const g = new THREE.BoxGeometry(w, h, d);
   const uv = g.attributes.uv;
   const dims = [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]];
@@ -39,7 +39,7 @@ function pbr(loader, name, { repeat = 1, color, roughness = 1, normalScale = 1, 
   return mat;
 }
 
-function canvasTexture(w, h, draw) {
+export function canvasTexture(w, h, draw) {
   const c = Object.assign(document.createElement('canvas'), { width: w, height: h });
   draw(c.getContext('2d'), w, h);
   const t = new THREE.CanvasTexture(c);
@@ -48,7 +48,7 @@ function canvasTexture(w, h, draw) {
   return t;
 }
 
-function shadowy(obj, cast = true, receive = true) {
+export function shadowy(obj, cast = true, receive = true) {
   obj.traverse((o) => { if (o.isMesh) { o.castShadow = cast; o.receiveShadow = receive; } });
   return obj;
 }
@@ -223,43 +223,25 @@ export async function buildRoom(renderer, manager) {
   sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.03; sun.shadow.radius = 4;
   scene.add(sun, sun.target);
 
-  // --- Shelving layout ---
+  // --- Atmosphere shelving: the shop's own antiquarian collection, behind glass ---
+  // (decorative, not for browsing; the curated displays live in displays.js)
   const runs = [];
-  const addUnit = (unit, x, z, ry, sections) => {
+  const glassMat = new THREE.MeshPhysicalMaterial({ color: '#ffffff', transmission: 0.92, roughness: 0.04, thickness: 0.01, ior: 1.45, envMapIntensity: 1.2 });
+  const addUnit = (unit, x, z, ry) => {
     unit.group.position.set(x, 0, z); unit.group.rotation.y = ry; scene.add(unit.group);
     unit.group.updateMatrixWorld(true);
     const m = unit.group.matrixWorld, rot = new THREE.Matrix3().setFromMatrix4(m);
-    for (const r of unit.runs) {
-      const section = typeof sections === 'function' ? sections(r) : sections;
-      runs.push({ ...r, section, start: r.start.clone().applyMatrix4(m), dir: r.dir.clone().applyMatrix3(rot).normalize(), normal: r.normal.clone().applyMatrix3(rot).normalize() });
-    }
+    for (const r of unit.runs) runs.push({ ...r, section: null, start: r.start.clone().applyMatrix4(m), dir: r.dir.clone().applyMatrix3(rot).normalize(), normal: r.normal.clone().applyMatrix3(rot).normalize() });
     const [fx, fz] = unit.footprint, c = Math.abs(Math.cos(ry)), s = Math.abs(Math.sin(ry));
     collide(x, z, fx * c + fz * s, fx * s + fz * c);
+    // glass doors in front
+    const glass = new THREE.Mesh(new THREE.PlaneGeometry(fx - 0.06, 2.1), glassMat);
+    glass.position.set(0, 1.12, unit.footprint[1] / 2 + 0.005); unit.group.add(glass);
+    const frameMat = woodMat;
+    for (const gx of [-(fx - 0.06) / 2, 0, (fx - 0.06) / 2]) { const f = new THREE.Mesh(box(0.035, 2.1, 0.03, 0.8), frameMat); f.position.set(gx, 1.12, unit.footprint[1] / 2 + 0.01); unit.group.add(f); }
   };
-  const signs = [];
-  const hangSign = (label, x, y, z, ry) => { const s = sectionSign(label); s.position.set(x, y, z); s.rotation.y = ry; scene.add(s); signs.push(s); };
-
-  // Back wall: two sections.
-  addUnit(shelfUnit({ length: 5.4, wood: woodMat }), -3.3, -D / 2 + 0.2, 0, 'philosophy');
-  addUnit(shelfUnit({ length: 5.4, wood: woodMat }), 3.3, -D / 2 + 0.2, 0, 'science');
-  hangSign('Philosophy & Ideas', -3.3, 2.75, -D / 2 + 0.5, 0);
-  hangSign('Science & Nature', 3.3, 2.75, -D / 2 + 0.5, 0);
-  // Left wall: long run, facing +x.
-  addUnit(shelfUnit({ length: 8.1, wood: woodMat }), -W / 2 + 0.2, -4.2, Math.PI / 2, 'poetry');
-  hangSign('Poetry & Drama', -W / 2 + 0.55, 2.75, -4.2, Math.PI / 2);
-  addUnit(shelfUnit({ length: 3.6, wood: woodMat }), -W / 2 + 0.2, 2.6, Math.PI / 2, 'children');
-  hangSign("Children's Classics", -W / 2 + 0.55, 2.75, 2.6, Math.PI / 2);
-  // Right wall behind the café zone, facing -x.
-  addUnit(shelfUnit({ length: 7.2, wood: woodMat }), W / 2 - 0.2, -4.6, -Math.PI / 2, 'society');
-  hangSign('History & Society', W / 2 - 0.55, 2.75, -4.6, -Math.PI / 2);
-  // Two freestanding double-sided aisles, running front-to-back.
-  const aisle = (x, a, b) => addUnit(shelfUnit({ length: 6.3, height: 1.95, levels: 5, doubleSided: true, wood: woodMat }), x, -3.2, Math.PI / 2, (r) => (r.side > 0 ? a : b));
-  aisle(-2.4, 'fiction', 'gothic');
-  aisle(2.0, 'adventure', 'fiction');
-  hangSign('Classic Fiction', -1.75, 2.75, -3.2, Math.PI / 2);
-  hangSign('Gothic & Mystery', -3.05, 2.75, -3.2, -Math.PI / 2);
-  hangSign('Adventure & Voyages', 2.65, 2.75, -3.2, Math.PI / 2);
-  hangSign('More Fiction', 1.35, 2.75, -3.2, -Math.PI / 2);
+  addUnit(shelfUnit({ length: 3.6, wood: woodMat }), -W / 2 + 0.2, 2.4, Math.PI / 2);
+  addUnit(shelfUnit({ length: 2.2, wood: woodMat }), 0, -D / 2 + 0.2, 0);
 
   // --- Café counter (front right) ---
   const cafe = new THREE.Group();
@@ -313,7 +295,8 @@ export async function buildRoom(renderer, manager) {
     ['hanging_industrial_lamp', 'potted_plant_04', 'mid_century_lounge_chair', 'round_wooden_table_01', 'bar_chair_round_01', 'vintage_grandfather_clock_01'].map((n) => loadModel(gltf, n)));
 
   const lights = [];
-  const lampSpots = [[-4.6, -6.5], [-4.6, -1], [0, -6.5], [0, -1], [4.6, -6.5], [4.6, -1], [-3, 4.8], [3.6, 3.4]];
+  // over the two tables, the four display bays, the reading nook and the café
+  const lampSpots = [[0, 4.0], [0, -3.0], [-3.3, -8.2], [3.3, -8.2], [-5.5, -3.5], [5.5, -3.5], [-4.2, 7.0], [3.6, 5.2]];
   for (const [x, z] of lampSpots) {
     const l = lamp.clone();
     l.updateMatrixWorld(true);
@@ -324,7 +307,7 @@ export async function buildRoom(renderer, manager) {
     cable.position.set(x, H - 0.2, z);
     scene.add(l, cable);
     const bulbY = H - (b.max.y - b.min.y) - 0.4 + 0.06;
-    const light = new THREE.PointLight('#ffc88a', 9, 0, 2);
+    const light = new THREE.PointLight('#ffc88a', 6.5, 0, 2);
     light.position.set(x, bulbY, z);
     scene.add(light); lights.push(light);
     const glow = new THREE.Mesh(new THREE.SphereGeometry(0.035, 12, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color('#ffd9a8').multiplyScalar(4) }));
@@ -349,5 +332,5 @@ export async function buildRoom(renderer, manager) {
   for (const [x, z] of [[-1.6, 9.1], [1.6, 9.1], [6.2, 8.9], [-6.3, -9.2], [6.3, -9.2]]) { const p = plant.clone(); scene.add(placeOnFloor(p, x, z, Math.random() * 6)); collide(x, z, 0.6, 0.6); }
   scene.add(placeOnFloor(clock, -W / 2 + 0.35, 5.4, Math.PI / 2)); collide(-W / 2 + 0.35, 5.4, 0.6, 0.7);
 
-  return { scene, runs, colliders, lights, sun, materials: { woodMat }, spawn: new THREE.Vector3(0, 0, 8.4) };
+  return { scene, runs, colliders, lights, sun, materials: { woodMat, counterTop, blackMetal, steel }, spawn: new THREE.Vector3(0, 0, 8.6) };
 }

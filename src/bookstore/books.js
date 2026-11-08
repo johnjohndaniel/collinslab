@@ -29,7 +29,42 @@ const rngFrom = (seed) => () => ((seed = (seed + 0x6d2b79f5) >>> 0), (((seed ^ (
 
 export function designFor(book) {
   const h = hash(book.id || book.title);
-  return { palette: PALETTES[h % PALETTES.length], style: (h >>> 8) % 4, seed: h };
+  return { palette: book.palette || PALETTES[h % PALETTES.length], style: (h >>> 8) % 4, seed: h };
+}
+
+// ---- Real covers (modern books) ----------------------------------------------
+const coverCache = new Map();
+/** Load a book's real cover through the site's caching proxy; resolves null if there isn't one. */
+export function loadCover(book) {
+  if (!book.cover_id) return Promise.resolve(null);
+  if (!coverCache.has(book.id)) {
+    coverCache.set(book.id, new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => { book.coverImage = img; book.palette = paletteFromImage(img); resolve(img); };
+      img.onerror = () => resolve(null);
+      img.src = `/bookstore/cover/${book.cover_id}`;
+    }));
+  }
+  return coverCache.get(book.id);
+}
+
+function paletteFromImage(img) {
+  const c = Object.assign(document.createElement('canvas'), { width: 16, height: 24 });
+  const g = c.getContext('2d'); g.drawImage(img, 0, 0, 16, 24);
+  const d = g.getImageData(0, 0, 16, 24).data;
+  let r = 0, gg = 0, b = 0, n = 0;
+  for (let i = 0; i < d.length; i += 4) { r += d[i]; gg += d[i + 1]; b += d[i + 2]; n++; }
+  const col = new THREE.Color(r / n / 255, gg / n / 255, b / n / 255);
+  const hsl = {}; col.getHSL(hsl);
+  const bg = new THREE.Color().setHSL(hsl.h, Math.min(0.6, hsl.s * 1.1), Math.min(0.42, Math.max(0.16, hsl.l * 0.75)));
+  const light = hsl.l > 0.62;
+  return { bg: `#${(light ? new THREE.Color().setHSL(hsl.h, hsl.s * 0.5, 0.86) : bg).getHexString()}`, fg: light ? '#1d1a16' : '#f4ecdc', accent: light ? '#7b2d26' : '#d8b066' };
+}
+
+/** Draw an image to fill a w×h box, cropping the overflow (like CSS object-fit: cover). */
+function drawCoverImage(g, img, w, h) {
+  const s = Math.max(w / img.width, h / img.height), iw = img.width * s, ih = img.height * s;
+  g.drawImage(img, (w - iw) / 2, (h - ih) / 2, iw, ih);
 }
 
 // Fit text into a width by shrinking the font.
@@ -86,6 +121,7 @@ export function drawSpine(g, book, w, h, { filler = false } = {}) {
 }
 
 export function drawCover(g, book, w, h) {
+  if (book.coverImage) { drawCoverImage(g, book.coverImage, w, h); clothGrain(g, w, h, 0.02, 3); return; }
   const { palette: p, style, seed } = designFor(book);
   const r = rngFrom(seed);
   g.fillStyle = p.bg; g.fillRect(0, 0, w, h);
@@ -162,7 +198,7 @@ export function drawBack(g, book, w, h) {
   const r = rngFrom(seed);
   let x = w * 0.58;
   while (x < w * 0.88) { const bw = 1 + Math.floor(r() * 4); g.fillRect(x, h * 0.815, bw, h * 0.08); x += bw + 1 + Math.floor(r() * 3); }
-  g.font = `${w * 0.028}px ${SANS}`; g.fillText(`PG ${book.gutenberg ?? ''} · public domain`, w * 0.58, h * 0.925);
+  g.font = `${w * 0.028}px ${SANS}`; g.fillText(book.isbn13 ? `ISBN ${book.isbn13}` : `PG ${book.gutenberg ?? ''} · public domain`, w * 0.58, h * 0.925);
   g.fillStyle = p.accent; g.font = `600 ${w * 0.035}px ${SANS}`; g.fillText('COLLINSLAB CLASSICS', w * 0.1, h * 0.9);
 }
 
@@ -529,7 +565,8 @@ export class HandBook {
     this.flip.visible = false;
     this.group.add(this.flip);
 
-    this.pages = previewPages(book, 900, Math.round((900 * h) / w));
+    this.canOpen = !book.modern && !!book.text;
+    this.pages = this.canOpen ? previewPages(book, 900, Math.round((900 * h) / w)) : [];
     this.pageTex = new Map();
     this.spread = 0;        // 0 = closed-cover view; k>0 = left page 2k-1 | right page 2k (1-based)
     this.openness = 0;      // 0 closed .. 1 open
