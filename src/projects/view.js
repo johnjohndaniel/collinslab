@@ -45,6 +45,7 @@ function render(p) {
     el('div', { className: 'meta' }, pill(p.status), el('span', { className: 'muted small', textContent: `last active ${ago(p.last_active)}` })),
     el('h1', { textContent: p.title }),
     el('p', { className: 'tagline', textContent: p.tagline }),
+    p.link ? el('a', { className: 'btn open-link', href: p.link, textContent: p.link_label || 'Open it ↗' }) : null,
     p.now ? el('div', { className: 'now-box' }, el('div', { className: 'label', textContent: `Latest · ${p.now.job} · ${fmt(p.now.at)}` }), el('p', { textContent: p.now.text })) : null,
     el('p', { className: 'about', textContent: p.about }),
     p.facts.length ? el('dl', { className: 'facts' }, ...p.facts.flatMap(([k, v]) => [el('dt', { textContent: k }), el('dd', { textContent: v })])) : null,

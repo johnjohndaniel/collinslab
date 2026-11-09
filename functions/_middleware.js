@@ -2,9 +2,8 @@
 // static bundles are public; everything else needs a valid session.
 import { readSession } from './_lib/session.js';
 
-const PUBLIC_EXACT = new Set(['/', '/index.html', '/favicon.svg', '/robots.txt', '/login', '/login/', '/login/index.html', '/bookstore']);
-// The bookstore is public (it's a shop); everything else on the site is private.
-const PUBLIC_PREFIX = ['/assets/', '/auth/', '/bookstore/'];
+const PUBLIC_EXACT = new Set(['/', '/index.html', '/favicon.svg', '/robots.txt', '/login', '/login/', '/login/index.html']);
+const PUBLIC_PREFIX = ['/assets/', '/auth/'];
 
 const isPublic = (path) => PUBLIC_EXACT.has(path) || PUBLIC_PREFIX.some((p) => path.startsWith(p));
 

@@ -35,7 +35,7 @@ function card(p) {
 async function load() {
   const projects = await getJSON('/api/projects');
   views = [];
-  const groups = ['running', 'recent', 'idle', 'dormant'].map((s) => [s, projects.filter((p) => p.status === s)]).filter(([, ps]) => ps.length);
+  const groups = ['running', 'recent', 'idle', 'paused', 'dormant'].map((s) => [s, projects.filter((p) => p.status === s)]).filter(([, ps]) => ps.length);
   document.getElementById('sections').replaceChildren(...groups.map(([s, ps]) =>
     el('section', { className: 'group' }, el('h2', { textContent: `${STATUS[s].label} · ${ps.length}` }), el('div', { className: 'grid' }, ...ps.map(card)))));
   const n = (s) => projects.filter((p) => p.status === s).length;

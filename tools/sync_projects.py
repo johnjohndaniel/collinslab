@@ -130,7 +130,7 @@ def build(cfg, registry):
     last = max(candidates) if candidates else None
     running = any(j['state'] == 'working' and j['updated'] and NOW - j['updated'] < dt.timedelta(hours=6) for j in jobs)
     age = (NOW - last) if last else None
-    status = ('running' if running else 'recent' if age and age < dt.timedelta(days=3)
+    status = cfg.get('status') or ('running' if running else 'recent' if age and age < dt.timedelta(days=3)
               else 'idle' if age and age < dt.timedelta(days=DAYS) else 'dormant')
 
     now = events[-1] if events else None
@@ -151,7 +151,7 @@ def build(cfg, registry):
 
     return {
         'slug': cfg['slug'], 'title': cfg['title'], 'tagline': cfg['tagline'], 'about': cfg['about'],
-        'kind': cfg['kind'], 'hue': cfg.get('hue', 0.08), 'facts': cfg.get('facts', []), 'where': cfg.get('where', []),
+        'kind': cfg['kind'], 'hue': cfg.get('hue', 0.08), 'facts': cfg.get('facts', []), 'where': cfg.get('where', []), 'link': cfg.get('link'),
         'status': status, 'last_active': iso(last),
         'now': {'at': iso(now['at']), 'state': now['state'], 'text': now['text'], 'job': now['job']} if now else None,
         'activity': activity[:8], 'daily': daily,

@@ -19,6 +19,7 @@ export const STATUS = {
   recent: { label: 'Active this week', short: 'recent' },
   idle: { label: 'Quiet lately', short: 'idle' },
   dormant: { label: 'Dormant', short: 'dormant' },
+  paused: { label: 'Paused', short: 'paused' },
 };
 
 export const pill = (status) => el('span', { className: `pill pill-${status}`, textContent: STATUS[status]?.short || status });

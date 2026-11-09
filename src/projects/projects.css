@@ -64,3 +64,6 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
   .project-stage { position: static; }
   .project-stage canvas { height: 55vh; }
 }
+
+.open-link { display: inline-block; margin: 0 0 1rem; background: var(--copper); border-color: var(--copper); color: #1b0f08; font-weight: 600; text-decoration: none; }
+.pill-paused { background: #3a3550; color: #d8d0ff; }
