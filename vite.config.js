@@ -14,6 +14,8 @@ export default defineConfig({
         project: resolve(import.meta.dirname, 'projects/view/index.html'),
         chats: resolve(import.meta.dirname, 'chats/index.html'),
         bookstore: resolve(import.meta.dirname, 'bookstore/index.html'),
+        readingframe: resolve(import.meta.dirname, 'readingframe/index.html'),
+        readingframePrivacy: resolve(import.meta.dirname, 'readingframe/privacy/index.html'),
       },
     },
   },

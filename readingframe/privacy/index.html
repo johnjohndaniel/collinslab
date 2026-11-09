@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reading Frame — privacy policy</title>
+  <meta name="description" content="Privacy policy for Reading Frame, a personal tool that uploads science explainer videos to its owner's own YouTube channel." />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/src/style.css" />
+  <link rel="stylesheet" href="/src/app.css" />
+  <style>
+    .wrap { max-width: 46rem; margin: 0 auto; padding: 3.5rem 1.25rem 4rem; }
+    .wrap h1 { font-size: clamp(1.7rem, 5vw, 2.4rem); margin: 0.5rem 0 0; letter-spacing: -0.02em; }
+    .wrap h1 span { color: var(--copper); }
+    h2 { margin: 2.2rem 0 0.4rem; font-size: 1.1rem; }
+    p, li { color: var(--muted); }
+    p { max-width: 38rem; }
+    ul { padding-left: 1.2rem; display: grid; gap: 0.4rem; }
+    .updated { font-size: 0.85rem; }
+    .foot { margin-top: 3rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;
+            color: var(--muted); font-size: 0.85rem; display: flex; gap: 1rem; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <a class="wordmark" href="/readingframe/">Reading <span>Frame</span></a>
+    <h1>Privacy <span>policy</span></h1>
+    <p class="updated">Last updated 8 November 2026.</p>
+
+    <h2>What this application is</h2>
+    <p>Reading Frame is a personal, single-user tool. It turns research papers into short explainer
+      videos and uploads them to its owner's own YouTube channel. It is not a product offered to other
+      people, it has no accounts, and it has no users other than its owner.</p>
+
+    <h2>Google user data it accesses</h2>
+    <p>When its owner signs in with Google, the application requests two scopes:</p>
+    <ul>
+      <li><code>youtube.upload</code> — to upload video files to the owner's own YouTube channel.</li>
+      <li><code>youtube.readonly</code> — to read back the channel name and the status of a video it has
+        just uploaded, so the upload can be confirmed.</li>
+    </ul>
+    <p>It requests no other Google data. It does not read email, files, contacts or calendars, and it
+      does not access any account other than the one that grants it access.</p>
+
+    <h2>How that data is used and stored</h2>
+    <ul>
+      <li>The OAuth token is stored only on the owner's own computer, in a private directory readable
+        by the owner alone. It is never transmitted anywhere except to Google.</li>
+      <li>Video files, titles and descriptions are sent to YouTube in order to publish them.</li>
+      <li>No Google user data is sold, shared with third parties, used for advertising, or used to train
+        any machine-learning model.</li>
+      <li>No analytics, tracking or cookies are used by this application, and this page sets none.</li>
+    </ul>
+
+    <h2>Retention and removal</h2>
+    <p>The stored token is kept until it is deleted or revoked. Access can be withdrawn at any time from
+      the Google Account permissions page at
+      <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>, which
+      immediately and permanently ends the application's access. Deleting the local token file has the
+      same effect on this side.</p>
+
+    <h2>YouTube API Services</h2>
+    <p>This application uses YouTube API Services. By using it you are agreeing to be bound by the
+      <a href="https://www.youtube.com/t/terms">YouTube Terms of Service</a>. Google's handling of data
+      is described in the <a href="https://policies.google.com/privacy">Google Privacy Policy</a>.</p>
+
+    <h2>Content and corrections</h2>
+    <p>Videos published by this project summarise published research and reproduce figures from the
+      papers they discuss for the purposes of commentary and education, with the source paper and its
+      DOI cited in every video. Narration is produced with a synthetic voice; no video contains a
+      recording of a real person. If something is inaccurate, or if you are an author who would like a
+      video corrected or taken down, write to the contact address below and it will be acted on.</p>
+
+    <h2>Contact</h2>
+    <p><a href="mailto:macjdcollins@gmail.com">macjdcollins@gmail.com</a></p>
+
+    <div class="foot">
+      <a href="/readingframe/">Reading Frame</a>
+      <a href="/">collinslab.dev</a>
+    </div>
+  </main>
+</body>
+</html>

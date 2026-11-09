@@ -3,7 +3,7 @@
 import { readSession } from './_lib/session.js';
 
 const PUBLIC_EXACT = new Set(['/', '/index.html', '/favicon.svg', '/robots.txt', '/login', '/login/', '/login/index.html']);
-const PUBLIC_PREFIX = ['/assets/', '/auth/'];
+const PUBLIC_PREFIX = ['/assets/', '/auth/', '/readingframe/'];  // Google requires the app's home + privacy pages to be public
 
 const isPublic = (path) => PUBLIC_EXACT.has(path) || PUBLIC_PREFIX.some((p) => path.startsWith(p));
 

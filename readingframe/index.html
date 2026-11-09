@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reading Frame — research papers, explained in a minute</title>
+  <meta name="description" content="Reading Frame turns a research paper into a one-minute vertical video: a walk through the paper's own figures plus one custom animated schematic." />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/src/style.css" />
+  <link rel="stylesheet" href="/src/app.css" />
+  <style>
+    .wrap { max-width: 46rem; margin: 0 auto; padding: 3.5rem 1.25rem 4rem; }
+    .wrap h1 { font-size: clamp(2rem, 6vw, 3rem); margin: 0; letter-spacing: -0.02em; }
+    .wrap h1 span { color: var(--copper); }
+    .lede { color: var(--muted); font-size: 1.05rem; max-width: 36rem; }
+    h2 { margin: 2.5rem 0 0.5rem; font-size: 1.15rem; }
+    ol, ul { color: var(--muted); padding-left: 1.2rem; display: grid; gap: 0.45rem; }
+    .foot { margin-top: 3rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;
+            color: var(--muted); font-size: 0.85rem; display: flex; gap: 1rem; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <a class="wordmark" href="/">collins<span>lab</span></a>
+    <h1>Reading <span>Frame</span></h1>
+    <p class="lede">Research papers, explained in about a minute. Each video walks through a paper's own
+      figures and adds one custom animated schematic for the idea the figures are evidence for.</p>
+
+    <h2>What this is</h2>
+    <p class="lede">Reading Frame is a small science-communication project. Papers in microbial ecology,
+      synthetic biology and related fields are turned into short vertical videos aimed at scientists in
+      neighbouring fields, students, and anyone curious enough to want the real evidence rather than a
+      headline. Every number quoted in a video is checked against the paper it came from, and each video
+      cites the paper and its DOI.</p>
+
+    <h2>How a video is made</h2>
+    <ol>
+      <li>The paper's text and figures are extracted from the PDF.</li>
+      <li>A script is written around one central concept, with each claim tied to a quote from the paper.</li>
+      <li>Narration is produced with a synthetic voice. No video contains a recording of a real person.</li>
+      <li>Animations are rendered with Manim; the paper's own figures are shown and credited.</li>
+      <li>Frames are reviewed and re-rendered before anything is published.</li>
+    </ol>
+
+    <h2>Where to watch</h2>
+    <p class="lede">Videos are published on YouTube as Reading Frame.</p>
+
+    <h2>Contact</h2>
+    <p class="lede">Questions, corrections, or a paper you would like covered: use the support address on
+      the <a href="/readingframe/privacy/">privacy page</a>. Corrections are welcome and acted on.</p>
+
+    <div class="foot">
+      <a href="/readingframe/privacy/">Privacy policy</a>
+      <a href="/">collinslab.dev</a>
+    </div>
+  </main>
+</body>
+</html>
