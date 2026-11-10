@@ -5,12 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Reading Frame — research papers, explained in a minute</title>
   <meta name="description" content="Reading Frame turns a research paper into a one-minute vertical video: a walk through the paper's own figures plus one custom animated schematic." />
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/readingframe-mark.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="/src/style.css" />
   <link rel="stylesheet" href="/src/app.css" />
   <style>
     .wrap { max-width: 46rem; margin: 0 auto; padding: 3.5rem 1.25rem 4rem; }
     .wrap h1 { font-size: clamp(2rem, 6vw, 3rem); margin: 0; letter-spacing: -0.02em; }
+    .titleline { display: flex; align-items: center; gap: 0.6rem; }
+    .titleline img { border-radius: 10px; flex: none; }
     .wrap h1 span { color: var(--copper); }
     .lede { color: var(--muted); font-size: 1.05rem; max-width: 36rem; }
     h2 { margin: 2.5rem 0 0.5rem; font-size: 1.15rem; }
@@ -22,7 +24,7 @@
 <body>
   <main class="wrap">
     <a class="wordmark" href="/">collins<span>lab</span></a>
-    <h1>Reading <span>Frame</span></h1>
+    <h1 class="titleline"><img src="/readingframe-mark.svg" alt="" width="64" height="64">Reading <span>Frame</span></h1>
     <p class="lede">Research papers, explained in about a minute. Each video walks through a paper's own
       figures and adds one custom animated schematic for the idea the figures are evidence for.</p>
 
