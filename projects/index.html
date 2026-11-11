@@ -17,12 +17,16 @@
     <h2>Projects</h2>
     <div class="spacer"></div>
     <span id="synced" class="muted small"></span>
+    <a class="btn ghost" href="/manuscripts/">Manuscripts</a>
     <a class="btn ghost" href="/chats/">Chats</a>
     <a class="btn ghost" href="/board/">Board</a>
     <form method="post" action="/auth/logout"><button class="btn ghost">Sign out</button></form>
   </header>
   <main class="projects-main">
     <p id="summary" class="summary muted"></p>
+    <section id="kpis" class="kpis" aria-label="Portfolio KPIs"></section>
+    <section id="today" class="today" aria-label="Suggested focus today"></section>
+    <div id="sorter" class="sorter" role="tablist" aria-label="Sort projects"></div>
     <div id="sections"></div>
   </main>
   <script type="module" src="/src/projects/index.js"></script>

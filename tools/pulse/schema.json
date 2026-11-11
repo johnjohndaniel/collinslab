@@ -1,0 +1,113 @@
+{
+  "_purpose": "Shapes of the files the pulse models write. push.py validates against this with a small built-in validator (keywords: type, required, properties, items, enum, maxLength, maxItems, minimum). Unknown keys are dropped, not rejected.",
+  "project": {
+    "type": "object",
+    "required": ["slug", "stage", "headline", "current_work", "next_milestone", "blocked_on_me", "unattended", "open_problems", "value_note", "manuscripts"],
+    "properties": {
+      "slug": {"type": "string", "maxLength": 80},
+      "stage": {"type": "string", "enum": ["idea", "active", "writing", "wrapping-up", "paused", "dormant", "done"]},
+      "headline": {"type": "string", "maxLength": 220},
+      "current_work": {"type": "string", "maxLength": 400},
+      "next_milestone": {
+        "type": "object",
+        "required": ["name", "hours_estimate", "confidence"],
+        "properties": {
+          "name": {"type": "string", "maxLength": 200},
+          "hours_estimate": {"type": ["number", "null"], "minimum": 0},
+          "confidence": {"type": "string", "enum": ["low", "medium", "high"]}
+        }
+      },
+      "blocked_on_me": {
+        "type": "array", "maxItems": 8,
+        "items": {"type": "object", "required": ["item"], "properties": {"item": {"type": "string", "maxLength": 300}, "since": {"type": ["string", "null"], "maxLength": 20}}}
+      },
+      "unattended": {
+        "type": "object",
+        "required": ["can_run", "what"],
+        "properties": {"can_run": {"type": "boolean"}, "what": {"type": "string", "maxLength": 300}}
+      },
+      "open_problems": {
+        "type": "array", "maxItems": 8,
+        "items": {
+          "type": "object", "required": ["problem", "size", "kind"],
+          "properties": {
+            "problem": {"type": "string", "maxLength": 300},
+            "size": {"type": "string", "enum": ["small", "medium", "large"]},
+            "kind": {"type": "string", "enum": ["decision", "writing", "analysis", "compute", "data", "code", "figures", "citations", "admin"]}
+          }
+        }
+      },
+      "value_note": {"type": "string", "maxLength": 400},
+      "manuscripts": {
+        "type": "array", "maxItems": 6,
+        "items": {
+          "type": "object",
+          "required": ["slug", "title", "stage", "summary", "sections", "next_action", "hours_to_submission"],
+          "properties": {
+            "slug": {"type": "string", "maxLength": 80},
+            "title": {"type": "string", "maxLength": 300},
+            "stage": {"type": "string", "enum": ["outline", "draft", "full draft", "submission-ready"]},
+            "summary": {"type": "string", "maxLength": 600},
+            "target": {"type": ["string", "null"], "maxLength": 120},
+            "sections": {
+              "type": "array", "maxItems": 24,
+              "items": {
+                "type": "object", "required": ["heading", "status", "note"],
+                "properties": {
+                  "heading": {"type": "string", "maxLength": 160},
+                  "status": {"type": "string", "enum": ["missing", "outline", "drafted", "revised", "final"]},
+                  "words": {"type": ["number", "null"], "minimum": 0},
+                  "note": {"type": "string", "maxLength": 240}
+                }
+              }
+            },
+            "figures_note": {"type": "string", "maxLength": 240},
+            "citations_note": {"type": "string", "maxLength": 240},
+            "next_action": {"type": "string", "maxLength": 300},
+            "hours_to_submission": {"type": ["number", "null"], "minimum": 0}
+          }
+        }
+      }
+    }
+  },
+  "portfolio": {
+    "type": "object",
+    "required": ["headline", "today", "concurrent", "ranking", "attention"],
+    "properties": {
+      "headline": {"type": "string", "maxLength": 400},
+      "today": {
+        "type": "array", "maxItems": 6,
+        "items": {
+          "type": "object", "required": ["project", "problem", "why", "size"],
+          "properties": {
+            "project": {"type": "string", "maxLength": 80},
+            "problem": {"type": "string", "maxLength": 300},
+            "why": {"type": "string", "maxLength": 300},
+            "size": {"type": "string", "enum": ["small", "medium", "large"]},
+            "hours_estimate": {"type": ["number", "null"], "minimum": 0}
+          }
+        }
+      },
+      "concurrent": {
+        "type": "array", "maxItems": 12,
+        "items": {"type": "object", "required": ["project", "what"], "properties": {"project": {"type": "string", "maxLength": 80}, "what": {"type": "string", "maxLength": 300}}}
+      },
+      "ranking": {
+        "type": "array", "maxItems": 40,
+        "items": {
+          "type": "object", "required": ["project", "value", "effort", "note"],
+          "properties": {
+            "project": {"type": "string", "maxLength": 80},
+            "value": {"type": "string", "enum": ["high", "medium", "low"]},
+            "effort": {"type": "string", "enum": ["high", "medium", "low"]},
+            "note": {"type": "string", "maxLength": 300}
+          }
+        }
+      },
+      "attention": {
+        "type": "array", "maxItems": 10,
+        "items": {"type": "object", "required": ["project", "note"], "properties": {"project": {"type": "string", "maxLength": 80}, "note": {"type": "string", "maxLength": 300}}}
+      }
+    }
+  }
+}

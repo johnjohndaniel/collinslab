@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Manuscript · Collins Lab</title>
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/src/style.css" />
+  <link rel="stylesheet" href="/src/app.css" />
+  <link rel="stylesheet" href="/src/projects/projects.css" />
+  <link rel="stylesheet" href="/src/manuscripts/manuscripts.css" />
+</head>
+<body class="app manuscript-page">
+  <header class="topbar">
+    <a class="wordmark" href="/">collins<span>lab</span></a>
+    <a class="crumb" href="/manuscripts/">← All manuscripts</a>
+    <div class="spacer"></div>
+    <span id="synced" class="muted small"></span>
+    <a class="btn ghost" href="/projects/">Projects</a>
+    <a class="btn ghost" href="/board/">Board</a>
+  </header>
+  <main class="ms-detail">
+    <canvas id="stage" class="ms-stage" aria-hidden="true"></canvas>
+    <article id="info" class="ms-info"><p class="muted">Loading…</p></article>
+  </main>
+  <script type="module" src="/src/manuscripts/view.js"></script>
+</body>
+</html>

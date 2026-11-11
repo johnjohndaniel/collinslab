@@ -9,6 +9,8 @@
 //   GET    /api/projects         live project overviews
 //   GET    /api/projects/:slug
 //   GET    /api/chats            every Claude chat, categorized
+//   GET    /api/pulse            manuscript summaries + portfolio synthesis (hourly pulse)
+//   GET    /api/pulse/:slug      one manuscript summary
 //   GET    /api/export           full JSON dump (backup)
 
 const LABELS = new Set(['', 'idea', 'build', 'research', 'bug', 'urgent']);
@@ -132,6 +134,22 @@ export async function onRequest({ request, env, params }) {
       }
       const row = await db.prepare('SELECT data FROM projects WHERE slug = ?').bind(path[1]).first();
       return row ? Response.json(JSON.parse(row.data), { headers: { 'Cache-Control': 'no-store' } }) : bad('project not found', 404);
+    }
+
+    // Hourly pulse: manuscript summaries and the portfolio synthesis (written by tools/pulse/push.py).
+    if (path[0] === 'pulse' && method === 'GET' && path.length <= 2) {
+      const noStore = { headers: { 'Cache-Control': 'no-store' } };
+      if (path.length === 1) {
+        const { results } = await db.prepare('SELECT kind, data, updated_at FROM pulse').all();
+        const portfolio = results.find((r) => r.kind === 'portfolio');
+        return Response.json({
+          portfolio: portfolio ? JSON.parse(portfolio.data) : null,
+          manuscripts: results.filter((r) => r.kind === 'manuscript').map((r) => JSON.parse(r.data)),
+          updated_at: results.reduce((m, r) => (r.updated_at > m ? r.updated_at : m), ''),
+        }, noStore);
+      }
+      const row = await db.prepare("SELECT data FROM pulse WHERE slug = ? AND kind = 'manuscript'").bind(path[1]).first();
+      return row ? Response.json(JSON.parse(row.data), noStore) : bad('manuscript not found', 404);
     }
 
     // Every Claude chat, categorized (written by tools/sync_projects.py).

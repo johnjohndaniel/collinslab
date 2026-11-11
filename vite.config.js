@@ -13,6 +13,8 @@ export default defineConfig({
         projects: resolve(import.meta.dirname, 'projects/index.html'),
         project: resolve(import.meta.dirname, 'projects/view/index.html'),
         chats: resolve(import.meta.dirname, 'chats/index.html'),
+        manuscripts: resolve(import.meta.dirname, 'manuscripts/index.html'),
+        manuscript: resolve(import.meta.dirname, 'manuscripts/view/index.html'),
         bookstore: resolve(import.meta.dirname, 'bookstore/index.html'),
         readingframe: resolve(import.meta.dirname, 'readingframe/index.html'),
         readingframePrivacy: resolve(import.meta.dirname, 'readingframe/privacy/index.html'),

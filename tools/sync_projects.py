@@ -25,13 +25,12 @@ import os
 import re
 import sys
 import time
-import urllib.error
-import urllib.request
 from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import chats as chatlib  # noqa: E402
+from cfd1 import d1, database_id, load_env  # noqa: E402,F401
 
 HOME = Path.home()
 JOBS = HOME / '.claude' / 'jobs'
@@ -41,6 +40,8 @@ REPO = Path(__file__).resolve().parent.parent
 UTC = dt.timezone.utc
 NOW = dt.datetime.now(UTC)
 DAYS = 14  # length of the daily activity strip
+PULSE = HOME / '.local' / 'state' / 'collinslab' / 'pulse'  # written by tools/pulse/
+AUTO_KINDS = ['specimen', 'tree', 'packages', 'bars', 'surface', 'molecule', 'map', 'dna', 'galaxy', 'embedding', 'helix', 'globe']
 
 
 def parse_time(s):
@@ -161,6 +162,48 @@ def build(cfg, registry):
     }
 
 
+def _load(path):
+    try:
+        return json.loads(Path(path).read_text())
+    except (OSError, ValueError):
+        return None
+
+
+def auto_projects(configured):
+    """Projects the pulse scan found that the private project list does not have (hand-set entries win)."""
+    out = []
+    for f in sorted((PULSE / 'facts').glob('*.json')):
+        facts = _load(f)
+        if not facts or facts.get('configured') or facts['slug'] in configured:
+            continue
+        goal = next((h.get('goal') for h in facts.get('handoffs', []) if h.get('goal')), '') or ''
+        seed = sum(map(ord, facts['slug']))
+        out.append({'slug': facts['slug'], 'title': facts['title'], 'tagline': clean(goal, 160), 'about': clean(goal, 600),
+                    'kind': 'manuscript' if facts.get('manuscripts') else AUTO_KINDS[seed % len(AUTO_KINDS)],
+                    'hue': round((seed * 0.137) % 1, 3), 'handoffs': [h['slug'] for h in facts.get('handoffs', [])],
+                    'transcripts': [facts['slug']], 'jobs': [], 'auto': True})
+    return out
+
+
+def attach_pulse(row):
+    """Merge the last validated pulse summary and the scan's momentum into a project row."""
+    summary = _load(PULSE / 'valid' / f"{row['slug']}.json")
+    facts = _load(PULSE / 'facts' / f"{row['slug']}.json")
+    if facts:
+        row['momentum'] = facts.get('momentum')
+    if summary:
+        p = {k: summary.get(k) for k in ('stage', 'headline', 'current_work', 'next_milestone', 'blocked_on_me',
+                                         'unattended', 'open_problems', 'value_note', 'pulse_at')}
+        p['manuscripts'] = [{'slug': m.get('slug'), 'title': m.get('title'), 'stage': m.get('stage'),
+                             'hours_to_submission': m.get('hours_to_submission')} for m in summary.get('manuscripts', [])]
+        port = _load(PULSE / 'valid' / '_portfolio.json') or {}
+        rank = next((r for r in port.get('ranking', []) if r.get('project') == row['slug']), None)
+        if rank:
+            p['rank'] = {'value': rank['value'], 'effort': rank['effort'], 'note': rank['note']}
+        row['pulse'] = p
+    return row
+
+
 def humanize(title):
     """Job-style slugs ("tmux-mouse-mode-copy") read better as words ("Tmux mouse mode copy")."""
     t = (title or '').strip()
@@ -183,36 +226,6 @@ def chat_row(c):
     }
 
 
-def load_env(path):
-    env = {}
-    for line in Path(path).read_text().splitlines():
-        if '=' in line and not line.lstrip().startswith('#'):
-            k, v = line.split('=', 1)
-            env[k.strip()] = v.strip()
-    return env
-
-
-def database_id():
-    m = re.search(r'database_id\s*=\s*"([0-9a-f-]{36})"', (REPO / 'wrangler.toml').read_text())
-    if not m:
-        sys.exit('database_id not found in wrangler.toml')
-    return m.group(1)
-
-
-def d1(env, db, sql, params):
-    url = f"https://api.cloudflare.com/client/v4/accounts/{env['CLOUDFLARE_ACCOUNT_ID']}/d1/database/{db}/query"
-    req = urllib.request.Request(url, data=json.dumps({'sql': sql, 'params': params}).encode(), method='POST',
-                                 headers={'Authorization': f"Bearer {env['CLOUDFLARE_API_TOKEN']}", 'Content-Type': 'application/json'})
-    try:
-        with urllib.request.urlopen(req, timeout=30) as r:
-            out = json.load(r)
-    except urllib.error.HTTPError as e:
-        raise RuntimeError(f'D1 {e.code}: {e.read().decode(errors="replace")[:500]}') from None
-    if not out.get('success'):
-        raise RuntimeError(out.get('errors'))
-    return out
-
-
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('--config', default=str(HOME / '.config' / 'collinslab' / 'projects.json'))
@@ -223,7 +236,11 @@ def main():
 
     registry = read_registry()
     projects = json.loads(Path(a.config).read_text())['projects']
-    rows = [build(p, registry) for p in projects]
+    projects = projects + auto_projects({p['slug'] for p in projects})
+    for p in projects:  # a handoff with the project's own slug belongs to it even if the list omits it
+        if p['slug'] in registry and p['slug'] not in p.setdefault('handoffs', []):
+            p['handoffs'] = p['handoffs'] + [p['slug']]
+    rows = [attach_pulse(build(p, registry)) for p in projects]
 
     def project_for(sid, folder):
         for p in projects:
