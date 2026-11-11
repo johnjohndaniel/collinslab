@@ -113,3 +113,4 @@ body.graph-page { overflow: hidden; height: 100dvh; }
   .detail { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 55dvh; border-radius: 0.9rem 0.9rem 0 0; padding-bottom: calc(0.9rem + env(safe-area-inset-bottom)); }
   .graph-page #count { display: none; }
 }
+.checks .since { color: #ffd98a; }

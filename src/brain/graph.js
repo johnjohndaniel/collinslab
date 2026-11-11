@@ -15,8 +15,8 @@ const TYPES = {  // fixed order = validated categorical slots (brain.css header)
   repo: { label: 'Repos', color: '#c98500' },
 };
 const DIM = '#2a3133';
-const REL_OUT = { in: 'in project', read: 'read', wrote: 'wrote', edited: 'edited' };
-const REL_IN = { in: 'contains', read: 'read by', wrote: 'written by', edited: 'edited by' };
+const REL_OUT = { in: 'in project', read: 'read', wrote: 'wrote', edited: 'edited', committed: 'committed to' };
+const REL_IN = { in: 'contains', read: 'read by', wrote: 'written by', edited: 'edited by', committed: 'commits by' };
 const phone = matchMedia('(max-width: 760px)').matches;
 const $ = (id) => document.getElementById(id);
 
@@ -31,7 +31,9 @@ function visibleNodes() {
     if (d.type === 'session' && d.subagent && !state.subagents) return false;
     if (state.host && d.host && d.host !== state.host) return false;
     if (state.host && !d.host && d.type !== 'project') return false;
-    if (state.project && (d.type === 'project' ? d.label !== state.project : d.project !== state.project && !(adj.get(d.id) || []).some(([o]) => o === `p:${state.project}`))) return false;
+    // Every node carries `project` since the 2026-11-11 feed update; the link check covers older feeds.
+    if (state.project && (d.type === 'project' ? d.label !== state.project
+      : d.project ? d.project !== state.project : !(adj.get(d.id) || []).some(([o]) => o === `p:${state.project}`))) return false;
     const day = dateOf(d);
     if (day && d.type !== 'project' && ((state.from && day < state.from) || (state.to && day > state.to))) return false;
     return true;
@@ -189,7 +191,7 @@ async function main() {
   fit();
   apply();
   graph.onEngineStop(() => { if (!state.selected && !main.fitted) { main.fitted = true; graph.zoomToFit(600, 30, (d) => d.degree > 0); } });
-  $('status').textContent = `Graph published ${ago(g.generated)}. Click a node for details.`;
+  $('status').textContent = `Graph content changed ${ago(meta.graph_generated || g.generated)}. Click a node for details.`;
   setTimeout(() => { $('status').hidden = true; }, 6000);
 }
 

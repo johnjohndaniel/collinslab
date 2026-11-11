@@ -66,3 +66,13 @@ test('the gate keeps /brain/ and /api/brain/ out of the public prefixes', async 
   const lists = src.match(/PUBLIC_(EXACT|PREFIX)\s*=\s*[^;]+;/g).join(' ');
   assert.doesNotMatch(lists, /brain/);
 });
+
+test('fixture carries the 2026-11-11 feed additions the pages use', async () => {
+  const meta = JSON.parse(await readFile(new URL('v1/meta.json', FIX)));
+  const dash = JSON.parse(await readFile(new URL('v1/dashboard.json', FIX)));
+  const graph = JSON.parse(await readFile(new URL('v1/graph.json', FIX)));
+  assert.ok(meta.graph_generated && meta.dashboard_generated);
+  assert.ok(dash.checks.filter((c) => c.level !== 'green').every((c) => c.since));
+  assert.ok(graph.nodes.filter((d) => d.type === 'document' || d.type === 'repo').every((d) => d.project));
+  assert.ok(graph.edges.some((e) => e.rel === 'committed'));
+});

@@ -107,11 +107,11 @@ function render(d, meta) {
   document.getElementById('dash').replaceChildren(
     el('section', { className: `hero lvl-bg-${d.overall}` },
       el('div', {}, el('div', { className: 'small muted', textContent: 'Overall health' }), el('div', { className: 'big' }, status(d.overall))),
-      el('div', { className: 'small muted', textContent: `Feed generated ${ago(d.generated)}${bad.length ? ` · ${bad.length} check${bad.length > 1 ? 's' : ''} need attention` : ' · all checks pass'}` }),
+      el('div', { className: 'small muted', textContent: `Dashboard ${ago(meta?.dashboard_generated || d.generated)} · graph changed ${ago(meta?.graph_generated)}${bad.length ? ` · ${bad.length} check${bad.length > 1 ? 's' : ''} need attention` : ' · all checks pass'}` }),
       el('div', { className: 'tiles' },
         tile(n(totals.items), 'items held'), tile(n(totals.links), 'links'), tile(n(d.upcoming_events_7d), 'events next 7 days'),
         tile(n(Object.entries(gc).filter(([k]) => k !== 'edges').reduce((s, [, v]) => s + v, 0)), 'graph nodes', '/brain/graph/'))),
-    card('Health checks', el('ul', { className: 'checks' }, ...checks.map((c) => el('li', {}, status(c.level), el('div', {}, el('div', { className: 'name', textContent: prettyCheck(c.check) }), el('div', { className: 'small muted', textContent: c.detail })))))),
+    card('Health checks', el('ul', { className: 'checks' }, ...checks.map((c) => el('li', {}, status(c.level), el('div', {}, el('div', { className: 'name', textContent: prettyCheck(c.check) }), el('div', { className: 'small muted', textContent: c.detail }), c.since && c.level !== 'green' ? el('div', { className: 'small since', textContent: `${LEVEL[c.level]?.label || c.level} since ${ago(c.since)}` }) : null))))),
     groups.length ? card('Activity, last 120 days', el('p', { className: 'small muted', textContent: 'Per day, by when it happened and by when the brain stored it.' }), chips, chartBox) : null,
     card('What the brain holds', el('table', { className: 'src holdings' }, el('thead', {}, el('tr', {}, ...['Source', 'Kind', 'Items', '', 'MB'].map((h) => el('th', { textContent: h })))),
       el('tbody', {}, ...src.map((s) => el('tr', {}, el('td', { textContent: s.source }), el('td', { className: 'muted', textContent: s.kind }), el('td', { className: 'num', textContent: n(s.n) }), el('td', { className: 'barcell' }, bar(s.n, maxN)), el('td', { className: 'num muted', textContent: COUNT_ONLY.has(s.kind) || s.mb == null ? '' : n(Math.round(s.mb)) })))))),
