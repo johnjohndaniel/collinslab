@@ -204,6 +204,29 @@ def attach_pulse(row):
     return row
 
 
+def pulse_board(cfg):
+    """The 'Ongoing manuscripts' entry: status follows the pulse cron, facts come from the last summaries."""
+    import subprocess
+    try:
+        on = 'tools/pulse/run.sh' in subprocess.run(['crontab', '-l'], capture_output=True, text=True, timeout=10).stdout
+    except (OSError, subprocess.SubprocessError):
+        on = False
+    stages = Counter()
+    latest = None
+    for vf in (PULSE / 'valid').glob('*.json'):
+        if vf.name.startswith('_'):
+            continue
+        summary = _load(vf) or {}
+        for m in summary.get('manuscripts', []):
+            stages[m.get('stage') or 'unjudged'] += 1
+        latest = max(filter(None, [latest, summary.get('pulse_at')]), default=None)
+    facts = [['Manuscripts', str(sum(stages.values()))]] + [[k.capitalize(), str(v)] for k, v in sorted(stages.items())]
+    facts.append(['Hourly pulse', 'on' if on else 'off (ask to turn it back on)'])
+    if latest:
+        facts.append(['Last judged', latest[:16].replace('T', ' ') + ' UTC'])
+    return dict(cfg, status='recent' if on else 'paused', facts=facts)
+
+
 def humanize(title):
     """Job-style slugs ("tmux-mouse-mode-copy") read better as words ("Tmux mouse mode copy")."""
     t = (title or '').strip()
@@ -240,6 +263,7 @@ def main():
     for p in projects:  # a handoff with the project's own slug belongs to it even if the list omits it
         if p['slug'] in registry and p['slug'] not in p.setdefault('handoffs', []):
             p['handoffs'] = p['handoffs'] + [p['slug']]
+    projects = [pulse_board(p) if p.get('pulse_board') else p for p in projects]
     rows = [attach_pulse(build(p, registry)) for p in projects]
 
     def project_for(sid, folder):

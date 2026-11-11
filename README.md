@@ -40,11 +40,19 @@ Projects missing from the private list still appear: every handoff root the puls
 
 ## Pulse: manuscripts and KPIs
 
-`/manuscripts/` lists every paper in progress with its stage and section-by-section readiness. `/projects/` carries the KPI strip (waiting on you, runs unattended, momentum, nearest milestones) and the Today panel. Both pages show summaries only. No manuscript file leaves the workstation.
+`/manuscripts/` lists every paper in progress with its stage and section-by-section readiness. It is reached only through the "Ongoing manuscripts" project on `/projects/` (`pulse_board: true` in the private project list), not from the main navigation. `/projects/` also carries the KPI strip (waiting on you, runs unattended, momentum, nearest milestones) and the Today panel. The Today panel hides itself once its synthesis is more than a day old. All of it is summaries only. No manuscript file leaves the workstation.
 
-An hourly cron job runs `tools/pulse/run.sh`, which runs these steps in order:
+The pulse is **off** by default to save cost (about $0.49 per run at API prices, almost all of it the Sonnet synthesis). The pages keep the last judged data.
 
-1. `scan.py` builds the project and manuscript lists, extracts counts without a model, and fingerprints each project. It exits with `unchanged` when nothing moved since the last good push, so most hours cost nothing.
+```bash
+tools/pulse/cron.sh on       # install the hourly cron line and run one cycle now
+tools/pulse/cron.sh off      # remove the cron line; code, config and state stay
+tools/pulse/cron.sh status
+```
+
+When on, the hourly cron job runs `tools/pulse/run.sh`, which runs these steps in order:
+
+1. `scan.py` builds the project and manuscript lists, extracts counts without a model, and fingerprints each project. It exits with `unchanged` when nothing moved since the last good push, so quiet hours cost nothing.
 2. A headless Claude orchestrator (Sonnet, `orchestrator.md`) sends one Haiku `pulse-worker` (`worker.md`) per changed project. Then it writes the cross-project synthesis.
 3. `push.py` validates every file against `schema.json`, redacts secrets and emails, and upserts the `pulse` table. Then it runs `sync_projects.py`, which merges each project's pulse into its row.
 

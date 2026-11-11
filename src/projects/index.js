@@ -72,7 +72,8 @@ function renderKpis(projects) {
 
 function renderToday(portfolio, projects) {
   const box = document.getElementById('today');
-  if (!portfolio) { box.replaceChildren(); return; }
+  const stale = !portfolio?.generated || Date.now() - new Date(portfolio.generated).getTime() > 24 * 3600e3;
+  if (!portfolio || stale) { box.replaceChildren(); return; } // pulse off: no stale suggestions
   const title = (slug) => projects.find((p) => p.slug === slug)?.title || slug;
   box.replaceChildren(
     el('div', { className: 'today-head' }, el('h2', { textContent: 'Today' }), el('span', { className: 'small muted', textContent: portfolio.generated ? `pulse ${ago(portfolio.generated)}` : '' })),

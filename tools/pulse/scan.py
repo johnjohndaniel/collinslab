@@ -264,6 +264,8 @@ def project_units(projects, registry):
     covered = {}
     units = []
     for p in projects:
+        if p.get('pulse_board'):
+            continue  # the manuscripts board entry, not a research project
         hs = list(p.get('handoffs', []))
         if p['slug'] in registry and p['slug'] not in hs:
             hs.append(p['slug'])
