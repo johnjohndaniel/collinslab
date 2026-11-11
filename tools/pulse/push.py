@@ -124,12 +124,18 @@ def main():
     fails = fails if isinstance(fails, dict) else {}
     manifest = load(state / 'manifest.json')
     changed = set(manifest.get('changed', [])) if isinstance(manifest, dict) else set()
+    scan_time = (state / 'manifest.json').stat().st_mtime if (state / 'manifest.json').exists() else 0
 
     report = []
     for slug in sorted(pending):
         out = state / 'projects' / f'{slug}.json'
         raw = load(out) if out.exists() else None
         if slug not in changed:
+            continue
+        if raw is not None and out.stat().st_mtime < scan_time:
+            # Not rewritten by this run (e.g. the Claude run hit a usage limit). Leave the
+            # fingerprint pending so the next hour retries it, without counting a failure.
+            report.append(f'{slug}: not re-judged this run, will retry')
             continue
         if raw is None or isinstance(raw, Exception):
             errs = ['no summary written' if raw is None else f'unreadable: {raw}']
