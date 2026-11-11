@@ -6,3 +6,4 @@ dist/
 .dev.vars
 backups/
 __pycache__/
+fixtures/

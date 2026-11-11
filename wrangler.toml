@@ -12,3 +12,8 @@ binding = "DB"
 database_name = "collinslab"
 database_id = "5b4c1ec3-8488-497c-b2d3-f0b1e8715131"
 migrations_dir = "migrations"
+
+# Brain feed (read-only by convention: the site only calls get()). Contract: ~/brain/docs/FEED.md
+[[r2_buckets]]
+binding = "BRAIN_FEED"
+bucket_name = "brain-feed"

@@ -9,9 +9,11 @@
     "preview": "vite preview",
     "deploy": "vite build && wrangler d1 migrations apply collinslab --remote && wrangler pages deploy dist --project-name collinslab --branch main",
     "dev:full": "vite build && wrangler d1 migrations apply collinslab --local && wrangler pages dev dist --port 8788",
-    "backup": "mkdir -p backups && wrangler d1 export collinslab --remote --output backups/collinslab-$(date +%Y%m%d-%H%M%S).sql"
+    "backup": "mkdir -p backups && wrangler d1 export collinslab --remote --output backups/collinslab-$(date +%Y%m%d-%H%M%S).sql",
+    "test": "node --test tests/"
   },
   "dependencies": {
+    "3d-force-graph": "^1.80.2",
     "lil-gui": "^0.21.0",
     "three": "^0.187.0"
   },

@@ -40,6 +40,9 @@ export async function onRequest(context) {
   const out = new Response(res.body, res);
   out.headers.set('X-Content-Type-Options', 'nosniff');
   out.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  if (!isPublic(url.pathname)) out.headers.set('Cache-Control', 'private, no-store');
+  // Private pages are never stored, except responses that already chose a private cache policy
+  // (the brain feed's hash-pinned files). Shared caches never see private content either way.
+  const cc = res.headers.get('Cache-Control') || '';
+  if (!isPublic(url.pathname) && !cc.startsWith('private')) out.headers.set('Cache-Control', 'private, no-store');
   return out;
 }

@@ -15,6 +15,8 @@ export default defineConfig({
         chats: resolve(import.meta.dirname, 'chats/index.html'),
         manuscripts: resolve(import.meta.dirname, 'manuscripts/index.html'),
         manuscript: resolve(import.meta.dirname, 'manuscripts/view/index.html'),
+        brain: resolve(import.meta.dirname, 'brain/index.html'),
+        brainGraph: resolve(import.meta.dirname, 'brain/graph/index.html'),
         bookstore: resolve(import.meta.dirname, 'bookstore/index.html'),
         readingframe: resolve(import.meta.dirname, 'readingframe/index.html'),
         readingframePrivacy: resolve(import.meta.dirname, 'readingframe/privacy/index.html'),

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Brain graph · Collins Lab</title>
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/src/style.css" />
+  <link rel="stylesheet" href="/src/app.css" />
+  <link rel="stylesheet" href="/src/brain/brain.css" />
+</head>
+<body class="app graph-page">
+  <header class="topbar">
+    <a class="wordmark" href="/">collins<span>lab</span></a>
+    <a class="crumb" href="/brain/">← Brain</a>
+    <div class="spacer"></div>
+    <span id="count" class="small muted"></span>
+    <button id="toggle-filters" class="btn ghost" type="button" aria-expanded="false" aria-controls="filters">Filters</button>
+  </header>
+  <div id="graph" class="graph-canvas" aria-label="3D knowledge graph"></div>
+  <aside id="filters" class="g-panel filters" hidden>
+    <label class="search"><span class="small muted">Search labels</span>
+      <input id="q" type="search" autocomplete="off" placeholder="file, session, project…" /></label>
+    <ul id="hits" class="hits"></ul>
+    <fieldset><legend class="small muted">Node types</legend><div id="types" class="types"></div></fieldset>
+    <label class="check"><input id="subagents" type="checkbox" /> Show sub-agent sessions <span id="sub-n" class="small muted"></span></label>
+    <label><span class="small muted">Project</span><select id="project"></select></label>
+    <label><span class="small muted">Host</span><select id="host"></select></label>
+    <div class="dates">
+      <label><span class="small muted">From</span><input id="from" type="date" /></label>
+      <label><span class="small muted">To</span><input id="to" type="date" /></label>
+    </div>
+    <button id="reset" class="btn ghost" type="button">Reset filters</button>
+  </aside>
+  <aside id="detail" class="g-panel detail" hidden aria-live="polite"></aside>
+  <p id="status" class="g-status small muted">Loading graph…</p>
+  <script type="module" src="/src/brain/graph.js"></script>
+</body>
+</html>

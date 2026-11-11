@@ -68,6 +68,16 @@ python3 tools/pulse/push.py --dry-run   # validate without touching D1
 python3 tools/pulse/seed_local.py       # copy current data into the local D1 for npm run dev:full
 ```
 
+## Brain
+
+`/brain/` (dashboard) and `/brain/graph/` (3D knowledge graph) show John's personal brain. They are private and reached from the "Personal brain" project. The brain VM publishes three JSON files to the private R2 bucket `brain-feed` every 15 minutes. The contract is `~/brain/docs/FEED.md` (schema 1, unknown fields ignored). The site never contacts the brain.
+
+- `functions/api/brain/[file].js` serves `meta`, `dashboard` and `graph` through the `BRAIN_FEED` binding, read-only. The ETag is the SHA-256 of the body served. Requests pinned with `?v=<sha>` from `meta.json` are cached privately as immutable.
+- `tools/brain/fetch_fixture.py` pulls the live files into the gitignored `fixtures/brain-feed/` with the read-only dev key in `~/.config/cloudflare.env`.
+- `npm test` runs the gate and API tests against that fixture.
+
+**CAUTION:** `/brain/` and `/api/brain/` must never enter `PUBLIC_PREFIX` or `PUBLIC_EXACT`. A test enforces this. Feed changes go through the brain repo, not this one.
+
 ## Add a page
 
 1. Add the page's HTML to `build.rollupOptions.input` in `vite.config.js`.
