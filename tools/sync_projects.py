@@ -244,8 +244,10 @@ def chat_row(c):
         'id': c['id'], 'title': humanize(c['title']), 'first_prompt': c.get('first_prompt'), 'prompts': c['prompts'],
         'start': c['start'], 'end': c['end'], 'host': c['host'], 'cwd': cwd, 'branch': c.get('branch'),
         'job_name': c.get('job_name'), 'project': c.get('project'), 'project_title': c.get('project_title'),
-        'category': c['category'], 'category_label': chatlib.CATEGORY_LABELS[c['category']],
-        'category_rank': chatlib.CATEGORY_ORDER.index(c['category']),
+        # A project may carry a category the keyword rules do not know (e.g. "business"):
+        # show it under its own name, sorted after the known ones, instead of failing the sync.
+        'category': c['category'], 'category_label': chatlib.CATEGORY_LABELS.get(c['category'], c['category'].replace('-', ' ').capitalize()),
+        'category_rank': chatlib.CATEGORY_ORDER.index(c['category']) if c['category'] in chatlib.CATEGORY_ORDER else len(chatlib.CATEGORY_ORDER),
     }
 
 
